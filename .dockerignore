@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+README.md
+.replit
+replit.nix
+.config
+tmp
+logs
+*.log
+.vscode
+.idea

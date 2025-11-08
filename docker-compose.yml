@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  keba-wallbox-pwa:
+    build: .
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+    restart: unless-stopped
+    network_mode: host  # Wichtig: Damit die App im LAN die Wallbox erreichen kann

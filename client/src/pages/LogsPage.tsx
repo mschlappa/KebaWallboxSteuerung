@@ -1,0 +1,263 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { LogEntry, LogSettings, LogLevel } from "@shared/schema";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Filter, RefreshCw } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+export default function LogsPage() {
+  const { toast } = useToast();
+  const [filterLevel, setFilterLevel] = useState<LogLevel | "all">("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+
+  const { data: logs = [], isLoading: logsLoading, refetch } = useQuery<LogEntry[]>({
+    queryKey: ["/api/logs"],
+    refetchInterval: 2000,
+  });
+
+  const { data: logSettings } = useQuery<LogSettings>({
+    queryKey: ["/api/logs/settings"],
+  });
+
+  const updateLogLevelMutation = useMutation({
+    mutationFn: (level: LogLevel) => apiRequest("POST", "/api/logs/settings", { level }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/logs/settings"] });
+      toast({
+        title: "Log-Level aktualisiert",
+        description: "Die Einstellung wurde gespeichert.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Log-Level konnte nicht aktualisiert werden.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const clearLogsMutation = useMutation({
+    mutationFn: () => apiRequest("DELETE", "/api/logs"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/logs"] });
+      toast({
+        title: "Logs gelöscht",
+        description: "Alle Log-Einträge wurden entfernt.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Logs konnten nicht gelöscht werden.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const filteredLogs = logs
+    .filter((log) => filterLevel === "all" || log.level === filterLevel)
+    .filter((log) => filterCategory === "all" || log.category === filterCategory)
+    .reverse();
+
+  const getLevelColor = (level: LogLevel) => {
+    switch (level) {
+      case "debug":
+        return "bg-muted text-muted-foreground";
+      case "info":
+        return "bg-primary text-primary-foreground";
+      case "warning":
+        return "bg-yellow-500 text-white dark:bg-yellow-600";
+      case "error":
+        return "bg-destructive text-destructive-foreground";
+    }
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case "wallbox":
+        return "bg-blue-500 text-white dark:bg-blue-600";
+      case "webhook":
+        return "bg-green-500 text-white dark:bg-green-600";
+      case "system":
+        return "bg-purple-500 text-white dark:bg-purple-600";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto pb-24 pt-6">
+        <div className="max-w-4xl mx-auto px-4 space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Logs</h1>
+            <p className="text-sm text-muted-foreground">
+              Kommunikation und System-Ereignisse
+            </p>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Log-Level</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm text-muted-foreground">
+                  Aktueller Log-Level
+                </label>
+                <Select
+                  value={logSettings?.level || "info"}
+                  onValueChange={(value) => updateLogLevelMutation.mutate(value as LogLevel)}
+                  data-testid="select-log-level"
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="debug">Debug (alle Meldungen)</SelectItem>
+                    <SelectItem value="info">Info (Standard)</SelectItem>
+                    <SelectItem value="warning">Warning (Warnungen)</SelectItem>
+                    <SelectItem value="error">Error (nur Fehler)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Bestimmt welche Log-Meldungen aufgezeichnet werden
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center justify-between">
+                <span>Filter</span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => refetch()}
+                    data-testid="button-refresh-logs"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => clearLogsMutation.mutate()}
+                    disabled={clearLogsMutation.isPending}
+                    data-testid="button-clear-logs"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm text-muted-foreground">Level</label>
+                  <Select
+                    value={filterLevel}
+                    onValueChange={(value) => setFilterLevel(value as LogLevel | "all")}
+                    data-testid="select-filter-level"
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle</SelectItem>
+                      <SelectItem value="debug">Debug</SelectItem>
+                      <SelectItem value="info">Info</SelectItem>
+                      <SelectItem value="warning">Warning</SelectItem>
+                      <SelectItem value="error">Error</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm text-muted-foreground">Kategorie</label>
+                  <Select
+                    value={filterCategory}
+                    onValueChange={setFilterCategory}
+                    data-testid="select-filter-category"
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle</SelectItem>
+                      <SelectItem value="wallbox">Wallbox</SelectItem>
+                      <SelectItem value="webhook">Webhook</SelectItem>
+                      <SelectItem value="system">System</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {filteredLogs.length === 0 && !logsLoading && (
+            <Alert data-testid="alert-no-logs">
+              <Filter className="h-4 w-4" />
+              <AlertDescription>
+                Keine Log-Einträge vorhanden. Sobald die Wallbox abgefragt wird oder Webhooks aufgerufen werden, erscheinen hier die Logs.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            {filteredLogs.map((log) => (
+              <Card key={log.id} className="overflow-hidden" data-testid={`log-entry-${log.id}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className={getLevelColor(log.level)} data-testid={`badge-level-${log.level}`}>
+                          {log.level.toUpperCase()}
+                        </Badge>
+                        <Badge className={getCategoryColor(log.category)} data-testid={`badge-category-${log.category}`}>
+                          {log.category}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground" data-testid={`text-timestamp-${log.id}`}>
+                          {formatTimestamp(log.timestamp)}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium" data-testid={`text-message-${log.id}`}>
+                        {log.message}
+                      </p>
+                      {log.details && (
+                        <p className="text-xs text-muted-foreground font-mono break-all" data-testid={`text-details-${log.id}`}>
+                          {log.details}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {logsLoading && filteredLogs.length === 0 && (
+            <div className="text-center text-muted-foreground py-8">
+              Lade Logs...
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
