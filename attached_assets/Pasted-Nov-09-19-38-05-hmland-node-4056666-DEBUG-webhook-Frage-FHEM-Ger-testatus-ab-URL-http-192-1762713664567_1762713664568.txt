@@ -1,0 +1,103 @@
+Nov 09 19:38:05 hmland node[4056666]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 09 19:38:05 hmland node[4056666]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=s10EntladenSperren, Gerät: s10EntladenSperren
+Nov 09 19:38:05 hmland node[4056666]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 09 19:38:05 hmland node[4056666]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: s10EntladenSperren, Status: off
+Nov 09 19:38:05 hmland node[4056666]: 7:38:05 PM [express] POST /api/controls/sync 200 in 335ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 09 19:38:09 hmland systemd[1]: Stopping KEBA Wallbox Control PWA...
+Nov 09 19:38:09 hmland systemd[1]: keba-wallbox.service: Succeeded.
+Nov 09 19:38:09 hmland systemd[1]: Stopped KEBA Wallbox Control PWA.
+Nov 09 19:38:09 hmland systemd[1]: keba-wallbox.service: Consumed 24.713s CPU time.
+Nov 09 19:38:09 hmland systemd[1]: Started KEBA Wallbox Control PWA.
+Nov 09 19:38:11 hmland node[4056791]: [Storage] Einstellungen geladen aus: /opt/keba-wallbox/KebaWallboxSteuerung/data/settings.json
+Nov 09 19:38:11 hmland node[4056791]: [INFO] [system] E3DC-Konfiguration beim Start geladen
+Nov 09 19:38:11 hmland node[4056791]: [INFO] [system] Nachtladungs-Scheduler wird gestartet - prüft alle 60 Sekunden
+Nov 09 19:38:12 hmland node[4056791]: [INFO] [system] Nachtladungs-Scheduler läuft - Aktuelle Zeit: 19:38, Zeitsteuerung aktiviert: true, Zeitfenster: 00:00-05:00
+Nov 09 19:38:12 hmland node[4056791]: 7:38:12 PM [express] serving on port 8080
+Nov 09 19:38:16 hmland node[4056791]: 7:38:16 PM [express] POST /api/controls/sync 200 in 446ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 09 19:38:21 hmland node[4056791]: 7:38:21 PM [express] GET /api/logs 200 in 17ms :: [{"id":"1762713491899-fhrci1koz","timestamp":"2025…
+Nov 09 19:38:21 hmland node[4056791]: 7:38:21 PM [express] GET /api/logs/settings 200 in 10ms :: {"level":"info"}
+Nov 09 19:38:23 hmland node[4056791]: [INFO] [system] Log-Level auf "debug" gesetzt
+Nov 09 19:38:23 hmland node[4056791]: 7:38:23 PM [express] POST /api/logs/settings 200 in 18ms :: {"success":true}
+Nov 09 19:38:23 hmland node[4056791]: 7:38:23 PM [express] GET /api/logs/settings 200 in 6ms :: {"level":"debug"}
+Nov 09 19:38:23 hmland node[4056791]: 7:38:23 PM [express] GET /api/logs 200 in 5ms :: [{"id":"1762713491899-fhrci1koz","timestamp":"2025-…
+Nov 09 19:38:25 hmland node[4056791]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 09 19:38:25 hmland node[4056791]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 09 19:38:25 hmland node[4056791]: 7:38:25 PM [express] POST /api/controls/sync 200 in 204ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 09 19:38:26 hmland node[4056791]: [INFO] [system] Batterie entladen sperren aktiviert
+Nov 09 19:38:26 hmland node[4056791]: [INFO] [system] Batterie-Entladesperre: Verwende E3DC-Integration
+Nov 09 19:38:26 hmland node[4056791]: 7:38:26 PM [express] POST /api/controls 200 in 105ms :: {"success":true}
+Nov 09 19:38:26 hmland node[4056791]: 7:38:26 PM [express] GET /api/controls 200 in 6ms :: {"pvSurplus":false,"nightCharging":false,"batte…
+Nov 09 19:38:36 hmland node[4056791]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 09 19:38:36 hmland node[4056791]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 09 19:38:36 hmland node[4056791]: 7:38:36 PM [express] POST /api/controls/sync 200 in 176ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 09 19:38:46 hmland node[4056791]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 09 19:38:46 hmland node[4056791]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 09 19:38:46 hmland node[4056791]: 7:38:46 PM [express] POST /api/controls/sync 200 in 170ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 09 19:38:56 hmland node[4056791]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 09 19:38:56 hmland node[4056791]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 09 19:38:56 hmland node[4056791]: 7:38:56 PM [express] POST /api/controls/sync 200 in 175ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 09 19:39:06 hmland node[4056791]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 09 19:39:06 hmland node[4056791]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 09 19:39:06 hmland node[4056791]: 7:39:06 PM [express] POST /api/controls/sync 200 in 169ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 09 19:39:10 hmland node[4056791]: [INFO] [system] Batterie entladen sperren deaktiviert
+Nov 09 19:39:10 hmland node[4056791]: [INFO] [system] Batterie-Entladesperre aufheben: Verwende E3DC-Integration
+Nov 09 19:39:10 hmland node[4056791]: [ERROR] [system] E3DC-Fehler beim Freigeben der Entladung, verwende Webhook-Fallback - Frame does not contain a EMS.GET_SYS_SPECS (01000097) data block
+Nov 09 19:39:10 hmland node[4056791]: [INFO] [system] Batterie-Entladesperre aufheben: Verwende Webhook
+Nov 09 19:39:10 hmland node[4056791]: [INFO] [webhook] Rufe SmartHome-URL auf - URL: http://192.168.40.11:8083/fhem?detail=s10EntladenSperren&cmd.s10EntladenSperren=set%20s10EntladenSperren%20off
+Nov 09 19:39:10 hmland node[4056791]: [INFO] [webhook] SmartHome-URL erfolgreich aufgerufen - Status: 200, URL: http://192.168.40.11:8083/fhem?detail=s10EntladenSperren&cmd.s10EntladenSperren=set%20s10EntladenSperren%20off
+Nov 09 19:39:10 hmland node[4056791]: 7:39:10 PM [express] POST /api/controls 200 in 319ms :: {"success":true}
+Nov 09 19:39:10 hmland node[4056791]: 7:39:10 PM [express] GET /api/controls 200 in 3ms :: {"pvSurplus":false,"nightCharging":false,"batte…
+Nov 09 19:39:11 hmland node[4056791]: [INFO] [system] Nachtladungs-Scheduler läuft - Aktuelle Zeit: 19:39, Zeitsteuerung aktiviert: true, Zeitfenster: 00:00-05:00
+Nov 09 19:39:16 hmland node[4056791]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 09 19:39:16 hmland node[4056791]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 09 19:39:16 hmland node[4056791]: 7:39:16 PM [express] POST /api/controls/sync 200 in 176ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 09 19:39:26 hmland node[4056791]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 09 19:39:26 hmland node[4056791]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 09 19:39:26 hmland node[4056791]: 7:39:26 PM [express] POST /api/controls/sync 200 in 176ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 09 19:39:30 hmland node[4056791]: 7:39:30 PM [express] GET /api/settings 200 in 11ms :: {"wallboxIp":"192.168.40.16","pvSurplusOnUrl":…
+Nov 09 19:39:36 hmland node[4056791]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 09 19:39:36 hmland node[4056791]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 09 19:39:36 hmland node[4056791]: 7:39:36 PM [express] POST /api/controls/sync 200 in 171ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 09 19:39:40 hmland node[4056791]: [E3DC] Connecting to: 192.168.40.200
+Nov 09 19:39:40 hmland node[4056791]: [E3DC] Portal User: marcus@schlappa.de
+Nov 09 19:39:40 hmland node[4056791]: [E3DC] RSCP Password length: 10
+Nov 09 19:39:40 hmland node[4056791]: [E3DC] Calling readPowerState()...
+Nov 09 19:39:40 hmland node[4056791]: [E3DC] PowerState received - FULL DUMP:
+Nov 09 19:39:40 hmland node[4056791]: [E3DC] All keys: [
+Nov 09 19:39:40 hmland node[4056791]:   'timestamp',
+Nov 09 19:39:40 hmland node[4056791]:   'pvDelivery',
+Nov 09 19:39:40 hmland node[4056791]:   'gridDelivery',
+Nov 09 19:39:40 hmland node[4056791]:   'batteryDelivery',
+Nov 09 19:39:40 hmland node[4056791]:   'houseConsumption',
+Nov 09 19:39:40 hmland node[4056791]:   'batteryChargingLevel',
+Nov 09 19:39:40 hmland node[4056791]:   'wallboxConsumption',
+Nov 09 19:39:40 hmland node[4056791]:   'wallboxProportionateSolarShare'
+Nov 09 19:39:40 hmland node[4056791]: ]
+Nov 09 19:39:40 hmland node[4056791]: [E3DC] batteryChargingLevel: 0
+Nov 09 19:39:40 hmland node[4056791]: [E3DC] batteryDelivery: -0
+Nov 09 19:39:40 hmland node[4056791]: [E3DC] Full object: {
+Nov 09 19:39:40 hmland node[4056791]:   "timestamp": "2025-11-09T18:39:40.788Z",
+Nov 09 19:39:40 hmland node[4056791]:   "pvDelivery": 0,
+Nov 09 19:39:40 hmland node[4056791]:   "gridDelivery": 0,
+Nov 09 19:39:40 hmland node[4056791]:   "batteryDelivery": 0,
+Nov 09 19:39:40 hmland node[4056791]:   "houseConsumption": 0,
+Nov 09 19:39:40 hmland node[4056791]:   "batteryChargingLevel": 0,
+Nov 09 19:39:40 hmland node[4056791]:   "wallboxConsumption": 0,
+Nov 09 19:39:40 hmland node[4056791]:   "wallboxProportionateSolarShare": 0
+Nov 09 19:39:40 hmland node[4056791]: }
+Nov 09 19:39:40 hmland node[4056791]: [E3DC] Disconnecting...
+Nov 09 19:39:40 hmland node[4056791]: [E3DC] Disconnected
+Nov 09 19:39:40 hmland node[4056791]: 7:39:40 PM [express] GET /api/e3dc/battery 200 in 98ms :: {"soc":0,"power":0,"maxChargePower":0,"max…
+Nov 09 19:39:47 hmland node[4056791]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 09 19:39:47 hmland node[4056791]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 09 19:39:47 hmland node[4056791]: 7:39:47 PM [express] POST /api/controls/sync 200 in 173ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 09 19:39:57 hmland node[4056791]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 09 19:39:57 hmland node[4056791]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 09 19:39:57 hmland node[4056791]: 7:39:57 PM [express] POST /api/controls/sync 200 in 182ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 09 19:39:59 hmland node[4056791]: [INFO] [system] Batterie entladen sperren aktiviert
+Nov 09 19:39:59 hmland node[4056791]: [INFO] [system] Batterie-Entladesperre: Verwende E3DC-Integration
+Nov 09 19:39:59 hmland node[4056791]: 7:39:59 PM [express] POST /api/controls 200 in 42ms :: {"success":true}
+Nov 09 19:39:59 hmland node[4056791]: 7:39:59 PM [express] GET /api/controls 200 in 4ms :: {"pvSurplus":false,"nightCharging":false,"batte…
+Nov 09 19:40:07 hmland node[4056791]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 09 19:40:07 hmland node[4056791]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 09 19:40:07 hmland node[4056791]: 7:40:07 PM [express] POST /api/controls/sync 200 in 170ms :: {"pvSurplus":false,"nightCharging":fals…
