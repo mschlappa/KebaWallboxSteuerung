@@ -10,6 +10,7 @@ import {
   DefaultLiveDataService,
   DefaultBatteryService,
   DefaultInfoService,
+  DefaultChargingService,
 } from 'easy-rscp';
 
 // WICHTIG: Ihre E3DC-Credentials hier eintragen!
@@ -55,6 +56,29 @@ async function testE3dcConnection() {
       console.log('Battery Status:', JSON.stringify(batteryStatus, null, 2));
     } catch (error) {
       console.error('❌ Battery Monitoring fehlgeschlagen:', error instanceof Error ? error.message : String(error));
+    }
+    
+    // Test 4: Charging Configuration (Die wichtige Funktion!)
+    console.log('\n--- Test 4: Charging Configuration ---');
+    const chargingService = new DefaultChargingService(connection);
+    
+    try {
+      const chargingConfig = await chargingService.readConfiguration();
+      console.log('Charging Config:', JSON.stringify(chargingConfig, null, 2));
+      
+      console.log('\n--- Test 5: Setze Entladesperre (0 W) ---');
+      const lockResult = await chargingService.writeLimits({
+        maxCurrentChargingPower: chargingConfig.currentLimitations.maxCurrentChargingPower,
+        maxCurrentDischargingPower: 0, // ENTLADUNG SPERREN
+        dischargeStartPower: chargingConfig.currentLimitations.dischargeStartPower,
+        chargingLimitationsEnabled: true,
+      });
+      console.log('Lock Result:', JSON.stringify(lockResult, null, 2));
+      
+      console.log('\n✅ Entladesperre gesetzt! Prüfen Sie Ihr E3DC-Display!');
+      
+    } catch (error) {
+      console.error('❌ Charging Service fehlgeschlagen:', error instanceof Error ? error.message : String(error));
     }
     
     console.log('\n✅ Test abgeschlossen');
