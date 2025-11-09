@@ -67,13 +67,11 @@ class E3dcClient {
     try {
       const chargingService = new DefaultChargingService(connection);
 
-      const currentConfig = await chargingService.readConfiguration();
-
-      // Setze Entladeleistung auf 0
+      // Setze nur Entladeleistung auf 0, ohne vorher readConfiguration() zu rufen
       const newLimits: ChargingLimits = {
-        maxCurrentChargingPower: currentConfig.currentLimitations.maxCurrentChargingPower,
+        maxCurrentChargingPower: 4600, // Typischer Wert für E3DC S10
         maxCurrentDischargingPower: 0, // Entladung sperren
-        dischargeStartPower: currentConfig.currentLimitations.dischargeStartPower,
+        dischargeStartPower: 65, // Typischer Wert
         chargingLimitationsEnabled: true,
       };
 
