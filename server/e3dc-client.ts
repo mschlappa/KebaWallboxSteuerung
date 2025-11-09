@@ -46,18 +46,31 @@ class E3dcClient {
     const connection = this.createConnection();
     
     try {
+      // Versuche BatteryService statt LiveDataService
+      const batteryService = new DefaultBatteryService(connection);
+      const batteryStatusArray = await batteryService.readMonitoringData();
+
+      console.log('[E3DC] BatteryStatus Raw Data:', JSON.stringify(batteryStatusArray, null, 2));
+
+      // E3DC kann mehrere Batterien haben, nehme die erste
+      const firstBattery = batteryStatusArray[0];
+
+      if (!firstBattery) {
+        throw new Error('No battery data available');
+      }
+
+      // Verwende auch LiveDataService für Power-Werte
       const liveDataService = new DefaultLiveDataService(connection);
       const powerState = await liveDataService.readPowerState();
 
-      // Debug-Logging
       console.log('[E3DC] PowerState Raw Data:', JSON.stringify(powerState, null, 2));
 
       return {
-        soc: powerState.batteryChargingLevel,
+        soc: firstBattery.realRsoc || firstBattery.asoc, // realRsoc ist der echte SOC
         power: powerState.batteryDelivery,
-        maxChargePower: 0, // Wird später über Charging-Limits ermittelt
-        maxDischargePower: 0, // Wird später über Charging-Limits ermittelt
-        dischargeLocked: false, // Wird über lockDischarge/unlockDischarge gesteuert
+        maxChargePower: 0,
+        maxDischargePower: 0,
+        dischargeLocked: false,
       };
     } finally {
       await connection.disconnect();
