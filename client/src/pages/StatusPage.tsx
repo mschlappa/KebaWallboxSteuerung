@@ -157,11 +157,11 @@ export default function StatusPage() {
       case 1:
         return "Verbunden an Wallbox";
       case 3:
-        return "Verbunden & Verriegelt";
+        return "Nicht eingesteckt";
       case 5:
-        return "Verbunden an Fahrzeug";
+        return "Eingesteckt";
       case 7:
-        return "Verbunden & Verriegelt an Fahrzeug";
+        return "Eingesteckt und verriegelt";
       default:
         return "Unbekannt";
     }
