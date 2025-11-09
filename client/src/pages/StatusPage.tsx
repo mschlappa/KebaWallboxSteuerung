@@ -186,6 +186,25 @@ export default function StatusPage() {
     }
   };
 
+  const getPhaseInfo = () => {
+    if (!status || !isCharging) return undefined;
+    
+    const phases = status.phases || 0;
+    if (phases === 0) return undefined;
+
+    const activePhases = [
+      (status.i1 || 0) >= 1,
+      (status.i2 || 0) >= 1,
+      (status.i3 || 0) >= 1,
+    ].filter(Boolean).length;
+
+    if (phases === 3 && activePhases === 2) {
+      return "3-phasig angeschlossen - lädt mit 2 Phasen";
+    }
+    
+    return `${phases}-phasig`;
+  };
+
   const isCharging = status?.state === 2 || status?.state === 3;
   const isPluggedIn = (status?.plug || 0) >= 3;
   const power = status?.power || 0;
@@ -219,7 +238,7 @@ export default function StatusPage() {
               unit="kW"
               status={isCharging ? "charging" : "stopped"}
               badge={isLoading ? "..." : waitingForConfirmation ? "Warte auf Bestätigung" : getStatusBadge(status?.state || 0)}
-              additionalInfo={isCharging && phases > 0 ? `${phases}-phasig` : undefined}
+              additionalInfo={getPhaseInfo()}
             />
 
             <Card data-testid="card-current-control">
@@ -227,7 +246,7 @@ export default function StatusPage() {
                 <div className="flex items-center gap-2">
                   <Gauge className="w-5 h-5 text-primary" />
                   <CardTitle className="text-base font-semibold">
-                    Ladestrom {currentAmpere}A {phases > 0 && `(${phases}-phasig)`}
+                    Ladestrom {currentAmpere}A
                   </CardTitle>
                 </div>
                 {controlState?.pvSurplus && (

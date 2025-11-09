@@ -357,6 +357,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         power: (report3?.P || 0) / 1000000,
         phases: report3?.["U1"] && report3?.["U2"] && report3?.["U3"] ? 3 : 
                 report3?.["U1"] ? 1 : 0,
+        i1: report3?.["I1"] ? report3["I1"] / 1000 : undefined,
+        i2: report3?.["I2"] ? report3["I2"] / 1000 : undefined,
+        i3: report3?.["I3"] ? report3["I3"] / 1000 : undefined,
       };
 
       res.json(status);

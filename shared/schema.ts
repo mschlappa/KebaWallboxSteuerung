@@ -9,6 +9,9 @@ export const wallboxStatusSchema = z.object({
   eTotal: z.number(),
   power: z.number(),
   phases: z.number().optional(),
+  i1: z.number().optional(),
+  i2: z.number().optional(),
+  i3: z.number().optional(),
 });
 
 export type WallboxStatus = z.infer<typeof wallboxStatusSchema>;
