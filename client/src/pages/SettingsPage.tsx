@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,8 +27,9 @@ import type { Settings, ControlState } from "@shared/schema";
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const formHydratedRef = useRef(false);
 
-  const { data: settings, isLoading: isLoadingSettings } = useQuery<Settings>({
+  const { data: settings, isLoading: isLoadingSettings, isSuccess: settingsLoaded } = useQuery<Settings>({
     queryKey: ["/api/settings"],
   });
 
@@ -73,6 +74,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (settings) {
       form.reset(settings);
+      formHydratedRef.current = true;
     }
   }, [settings, form]);
 
@@ -93,6 +95,8 @@ export default function SettingsPage() {
       });
     },
     onError: () => {
+      // Bei Fehler: Settings neu laden um UI-Zustand zu synchronisieren
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({
         title: "Fehler",
         description: "Die Einstellungen konnten nicht gespeichert werden.",
@@ -433,10 +437,23 @@ export default function SettingsPage() {
                         <Switch
                           id="night-enabled"
                           checked={form.watch("nightChargingSchedule.enabled")}
-                          onCheckedChange={(checked) => 
-                            form.setValue("nightChargingSchedule.enabled", checked)
-                          }
+                          onCheckedChange={(checked) => {
+                            // Blockiere Auto-Save bis Settings geladen UND Form hydratisiert ist
+                            if (!settingsLoaded || !formHydratedRef.current) {
+                              toast({
+                                title: "Bitte warten",
+                                description: "Einstellungen werden geladen...",
+                              });
+                              return;
+                            }
+                            
+                            form.setValue("nightChargingSchedule.enabled", checked);
+                            // Speichere automatisch wenn Scheduler-Switch getoggled wird
+                            const currentSettings = form.getValues();
+                            saveSettingsMutation.mutate(currentSettings);
+                          }}
                           data-testid="switch-night-enabled"
+                          disabled={isLoadingSettings || !formHydratedRef.current || saveSettingsMutation.isPending}
                         />
                       </div>
                       <div className="space-y-2">

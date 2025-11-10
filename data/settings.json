@@ -9,7 +9,6 @@
     "startTime": "00:00",
     "endTime": "05:00"
   },
-  "timezone": "Europe/Berlin",
   "e3dc": {
     "enabled": true,
     "dischargeLockEnableCommand": "/opt/keba-wallbox/e3dcset -p /opt/keba-wallbox/e3dcset.config -d 1",

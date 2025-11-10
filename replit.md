@@ -4,6 +4,8 @@
 
 This Progressive Web App (PWA) controls a KEBA Wallbox charging station for electric vehicles. It provides real-time status monitoring, charge control, and SmartHome integration features. The application enables users to monitor charging status, start/stop charging, and configure automated charging based on PV surplus, night schedules, and battery lockout rules. **Now includes E3DC integration via CLI tool (e3dcset) for battery discharge control and grid charging during night charging intervals.** It adheres to Material Design 3 principles with a mobile-first approach, optimized for German users.
 
+**Latest Update (Nov 2025):** Moon icon on status page now correctly reflects night charging scheduler enabled status. Auto-save implemented for scheduler toggle with robust form hydration guards to prevent data integrity issues.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -12,7 +14,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend
 
-The frontend uses React 18+ with TypeScript, Wouter for routing, TanStack Query for state management, and shadcn/ui (Radix UI primitives) for UI components. Styling is managed with Tailwind CSS, customized with design tokens following Material Design 3 principles. The design is mobile-first, responsive, and uses Roboto typography. Core components include `StatusCard`, `ChargingVisualization`, and `BottomNav`, structured with Atomic Design. **SmartHome control toggles (PV surplus, battery lock, grid charging) are integrated directly into the Settings page for streamlined manual configuration. Night charging is controlled exclusively via the automatic scheduler configuration.** PWA features like manifest configuration and Apple Touch Icons are included for a standalone app experience. **The StatusCard component on the main page displays contextual status icons (Sun, Moon, ShieldOff, PlugZap) indicating active SmartHome features. The Moon icon specifically represents automatic night charging scheduler status - it appears only when the scheduler is active within its configured time window.**
+The frontend uses React 18+ with TypeScript, Wouter for routing, TanStack Query for state management, and shadcn/ui (Radix UI primitives) for UI components. Styling is managed with Tailwind CSS, customized with design tokens following Material Design 3 principles. The design is mobile-first, responsive, and uses Roboto typography. Core components include `StatusCard`, `ChargingVisualization`, and `BottomNav`, structured with Atomic Design. **SmartHome control toggles (PV surplus, battery lock, grid charging) are integrated directly into the Settings page for streamlined manual configuration. Night charging is controlled exclusively via the automatic scheduler configuration.** PWA features like manifest configuration and Apple Touch Icons are included for a standalone app experience. **The StatusCard component on the main page displays contextual status icons (Sun, Moon, ShieldOff, PlugZap) indicating active SmartHome features. The Moon icon specifically represents automatic night charging scheduler enabled status - it appears when `settings.nightChargingSchedule.enabled === true`, providing immediate visual feedback about the scheduler configuration.**
 
 ### Backend
 
@@ -38,6 +40,8 @@ Currently, no authentication is implemented, as the application is designed for 
 8.  **Security-First Logging**: CLI outputs are sanitized to prevent credential leakage - development mode shows sanitized previews (200 chars), production mode shows only metadata. HTTP request logs are controlled by log level setting (only appear in debug mode).
 9.  **Visual Status Feedback**: Icon-based status indicators on the main screen provide immediate visual feedback for active SmartHome features, improving user awareness.
 10. **Fixed Timezone**: Application uses Europe/Berlin (MEZ/MESZ) timezone for all time-based operations including night charging scheduler. No user configuration required.
+11. **Auto-Save with Form Hydration Guards**: Scheduler toggle implements immediate auto-save with robust guards (`formHydratedRef`) to prevent race conditions and data corruption. Settings are never saved until form is fully hydrated with server data.
+12. **Optimistic UI with Refetch-on-Mount**: StatusPage uses `refetchOnMount: true` for settings query to ensure Moon icon always reflects current scheduler state after navigation from settings.
 
 ## External Dependencies
 

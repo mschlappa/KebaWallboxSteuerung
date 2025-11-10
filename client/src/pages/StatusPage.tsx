@@ -7,7 +7,7 @@ import StatusCard from "@/components/StatusCard";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { WallboxStatus, ControlState } from "@shared/schema";
+import type { WallboxStatus, ControlState, Settings } from "@shared/schema";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function StatusPage() {
@@ -27,6 +27,13 @@ export default function StatusPage() {
   const { data: controlState } = useQuery<ControlState>({
     queryKey: ["/api/controls"],
     refetchInterval: 5000,
+  });
+
+  const { data: settings } = useQuery<Settings>({
+    queryKey: ["/api/settings"],
+    refetchInterval: 5000, // Automatisch aktualisieren wie controlState
+    refetchOnMount: true, // Immer neu laden wenn Seite gemountet wird
+    refetchOnWindowFocus: true, // Neu laden wenn Fenster Fokus bekommt
   });
 
   useEffect(() => {
@@ -215,6 +222,7 @@ export default function StatusPage() {
 
   const getStatusIcons = () => {
     const icons = [];
+    
     if (controlState?.pvSurplus) {
       icons.push({
         icon: Sun,
@@ -222,10 +230,10 @@ export default function StatusPage() {
         color: "text-yellow-500 dark:text-yellow-400"
       });
     }
-    if (controlState?.nightCharging) {
+    if (settings?.nightChargingSchedule?.enabled) {
       icons.push({
         icon: Moon,
-        label: "Automatische Nachtladung aktiv",
+        label: "Nachtladungs-Scheduler aktiv",
         color: "text-blue-500 dark:text-blue-400"
       });
     }
