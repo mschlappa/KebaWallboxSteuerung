@@ -225,7 +225,7 @@ export default function StatusPage() {
     if (controlState?.nightCharging) {
       icons.push({
         icon: Moon,
-        label: "Nachtladung aktiv",
+        label: "Automatische Nachtladung aktiv",
         color: "text-blue-500 dark:text-blue-400"
       });
     }

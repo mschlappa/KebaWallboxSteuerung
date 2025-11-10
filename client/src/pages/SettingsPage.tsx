@@ -126,12 +126,23 @@ export default function SettingsPage() {
   };
 
   const handleControlChange = (field: keyof ControlState, value: boolean) => {
-    const currentState = controlForm.getValues();
     controlForm.setValue(field, value);
-    updateControlsMutation.mutate({
-      ...currentState,
+    
+    // Sende nur das geänderte Feld - nightCharging wird NIE vom Client gesendet
+    const currentState = controlForm.getValues();
+    const updates: Partial<ControlState> = {
       [field]: value,
-    });
+    };
+    
+    // Füge alle anderen Felder hinzu AUSSER nightCharging (scheduler-only)
+    const fullState: ControlState = {
+      pvSurplus: field === 'pvSurplus' ? value : currentState.pvSurplus,
+      batteryLock: field === 'batteryLock' ? value : currentState.batteryLock,
+      gridCharging: field === 'gridCharging' ? value : currentState.gridCharging,
+      nightCharging: currentState.nightCharging, // Immer aktueller Wert, wird nicht geändert
+    };
+    
+    updateControlsMutation.mutate(fullState);
   };
 
   return (
@@ -182,24 +193,6 @@ export default function SettingsPage() {
                   onCheckedChange={(checked) => handleControlChange("batteryLock", checked)}
                   disabled={isLoadingControls || updateControlsMutation.isPending}
                   data-testid="switch-battery-lock"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="space-y-0.5">
-                  <Label htmlFor="night-charging-control" className="text-sm font-medium">
-                    Nachtladung
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Manuell Nachtladung aktivieren/deaktivieren
-                  </p>
-                </div>
-                <Switch
-                  id="night-charging-control"
-                  checked={controlForm.watch("nightCharging")}
-                  onCheckedChange={(checked) => handleControlChange("nightCharging", checked)}
-                  disabled={isLoadingControls || updateControlsMutation.isPending}
-                  data-testid="switch-night-charging"
                 />
               </div>
 

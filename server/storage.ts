@@ -7,6 +7,7 @@ export interface IStorage {
   saveSettings(settings: Settings): void;
   getControlState(): ControlState;
   saveControlState(state: ControlState): void;
+  updateControlState(updates: Partial<ControlState>): void;
   getLogs(): LogEntry[];
   addLog(entry: Omit<LogEntry, "id" | "timestamp">): void;
   clearLogs(): void;
@@ -149,6 +150,15 @@ export class MemStorage implements IStorage {
   saveControlState(state: ControlState): void {
     this.controlState = state;
     this.saveControlStateToFile(state);
+  }
+
+  updateControlState(updates: Partial<ControlState>): void {
+    // Atomar: Lese aktuellen State, merge nur die angegebenen Felder, speichere
+    this.controlState = {
+      ...this.controlState,
+      ...updates,
+    };
+    this.saveControlStateToFile(this.controlState);
   }
 
   getLogs(): LogEntry[] {

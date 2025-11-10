@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { createSocket, type Socket } from "dgram";
-import { settingsSchema, controlStateSchema, logSettingsSchema, type LogLevel, e3dcBatteryStatusSchema } from "@shared/schema";
+import { settingsSchema, controlStateSchema, logSettingsSchema, type LogLevel, e3dcBatteryStatusSchema, type ControlState } from "@shared/schema";
 import { e3dcClient } from "./e3dc-client";
 
 const UDP_PORT = 7090;
@@ -503,43 +503,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/controls", async (req, res) => {
     try {
+      // Frischer State vom Storage für Vergleich
+      const currentStorageState = storage.getControlState();
+      
+      // Parse und validiere Request, aber entferne nightCharging (scheduler-only)
       const state = controlStateSchema.parse(req.body);
-      const previousState = storage.getControlState();
+      delete (state as any).nightCharging; // Entferne nightCharging aus Request
+      
       const settings = storage.getSettings();
 
-      if (state.pvSurplus !== previousState.pvSurplus) {
+      // Merke welche Felder tatsächlich geändert werden sollen
+      const changedFields = {
+        pvSurplus: state.pvSurplus !== currentStorageState.pvSurplus,
+        batteryLock: state.batteryLock !== currentStorageState.batteryLock,
+        gridCharging: state.gridCharging !== currentStorageState.gridCharging,
+      };
+
+      if (changedFields.pvSurplus) {
         log("info", "system", `PV-Überschussladung ${state.pvSurplus ? "aktiviert" : "deaktiviert"}`);
         await callSmartHomeUrl(
           state.pvSurplus ? settings?.pvSurplusOnUrl : settings?.pvSurplusOffUrl
         );
       }
 
-      if (state.nightCharging !== previousState.nightCharging) {
-        log("info", "system", `Nachtladung ${state.nightCharging ? "aktiviert" : "deaktiviert"}`);
-        if (state.nightCharging) {
-          // Starte Wallbox
-          if (settings?.wallboxIp) {
-            try {
-              await sendUdpCommand(settings.wallboxIp, "ena 1");
-              log("info", "wallbox", "Wallbox gestartet (manuelle Nachtladung)");
-            } catch (error) {
-              log("error", "wallbox", "Fehler beim Starten der Wallbox (manuelle Nachtladung)", error instanceof Error ? error.message : String(error));
-            }
-          }
-        } else {
-          // Stoppe Wallbox
-          if (settings?.wallboxIp) {
-            try {
-              await sendUdpCommand(settings.wallboxIp, "ena 0");
-              log("info", "wallbox", "Wallbox gestoppt (manuelle Nachtladung)");
-            } catch (error) {
-              log("error", "wallbox", "Fehler beim Stoppen der Wallbox (manuelle Nachtladung)", error instanceof Error ? error.message : String(error));
-            }
-          }
-        }
-      }
-
-      if (state.batteryLock !== previousState.batteryLock) {
+      if (changedFields.batteryLock) {
         log("info", "system", `Batterie entladen sperren ${state.batteryLock ? "aktiviert" : "deaktiviert"}`);
         if (state.batteryLock) {
           await lockBatteryDischarge(settings);
@@ -548,7 +535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      if (state.gridCharging !== previousState.gridCharging) {
+      if (changedFields.gridCharging) {
         log("info", "system", `Netzstrom-Laden ${state.gridCharging ? "aktiviert" : "deaktiviert"}`);
         if (state.gridCharging) {
           await enableGridCharging(settings);
@@ -557,7 +544,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      storage.saveControlState(state);
+      // Atomar: Nur die tatsächlich geänderten Felder aktualisieren
+      // nightCharging wird NIE vom Request übernommen (scheduler-only)
+      const updates: Partial<ControlState> = {};
+      if (changedFields.pvSurplus) updates.pvSurplus = state.pvSurplus;
+      if (changedFields.batteryLock) updates.batteryLock = state.batteryLock;
+      if (changedFields.gridCharging) updates.gridCharging = state.gridCharging;
+      
+      storage.updateControlState(updates);
       res.json({ success: true });
     } catch (error) {
       res.status(400).json({ error: "Invalid control state data" });
