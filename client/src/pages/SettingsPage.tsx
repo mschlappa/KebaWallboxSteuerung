@@ -67,6 +67,7 @@ export default function SettingsPage() {
       pvSurplus: false,
       nightCharging: false,
       batteryLock: false,
+      gridCharging: false,
     },
   });
 

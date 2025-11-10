@@ -91,7 +91,14 @@ export class MemStorage implements IStorage {
   }
 
   getControlState(): ControlState {
-    return this.controlState;
+    // Stelle sicher, dass immer alle Felder vorhanden sind (wichtig für Migration von alten Daten)
+    return {
+      pvSurplus: false,
+      nightCharging: false,
+      batteryLock: false,
+      gridCharging: false,
+      ...this.controlState,
+    };
   }
 
   saveControlState(state: ControlState): void {
