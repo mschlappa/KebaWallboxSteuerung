@@ -12,7 +12,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend
 
-The frontend uses React 18+ with TypeScript, Wouter for routing, TanStack Query for state management, and shadcn/ui (Radix UI primitives) for UI components. Styling is managed with Tailwind CSS, customized with design tokens following Material Design 3 principles. The design is mobile-first, responsive, and uses Roboto typography. Core components include `StatusCard`, `ChargingVisualization`, and `BottomNav`, structured with Atomic Design. **SmartHome control toggles (PV surplus, battery lock) are integrated directly into the Settings page for streamlined configuration.** PWA features like manifest configuration and Apple Touch Icons are included for a standalone app experience.
+The frontend uses React 18+ with TypeScript, Wouter for routing, TanStack Query for state management, and shadcn/ui (Radix UI primitives) for UI components. Styling is managed with Tailwind CSS, customized with design tokens following Material Design 3 principles. The design is mobile-first, responsive, and uses Roboto typography. Core components include `StatusCard`, `ChargingVisualization`, and `BottomNav`, structured with Atomic Design. **SmartHome control toggles (PV surplus, battery lock) are integrated directly into the Settings page for streamlined configuration.** PWA features like manifest configuration and Apple Touch Icons are included for a standalone app experience. **The StatusCard component on the main page displays contextual status icons (Sun, Moon, ShieldOff, PlugZap) indicating active SmartHome features like PV surplus charging, night charging, battery discharge lock, and grid charging.**
 
 ### Backend
 
@@ -20,7 +20,7 @@ The backend is built with Express.js and TypeScript, exposing a RESTful API (`/a
 
 ### Data Storage
 
-Drizzle ORM is configured for PostgreSQL, with schemas defined in `shared/schema.ts` and migrations via `drizzle-kit` using the Neon Serverless PostgreSQL driver. Current implementation uses file-based persistence, storing `WallboxStatus`, `Settings`, and `ControlState` in `data/settings.json` to ensure persistence across server restarts, especially in Docker environments.
+Drizzle ORM is configured for PostgreSQL, with schemas defined in `shared/schema.ts` and migrations via `drizzle-kit` using the Neon Serverless PostgreSQL driver. Current implementation uses file-based persistence, storing `WallboxStatus`, `Settings`, and `ControlState` in `data/settings.json` to ensure persistence across server restarts, especially in Docker environments. **The ControlState schema includes four boolean flags: `pvSurplus`, `nightCharging`, `batteryLock`, and `gridCharging`. The storage layer ensures backward compatibility by backfilling missing fields with default values when retrieving state.**
 
 ### Authentication
 
@@ -30,12 +30,13 @@ Currently, no authentication is implemented, as the application is designed for 
 
 1.  **Separation of Concerns**: Shared schema definitions (`shared/`) for type safety across frontend and backend.
 2.  **File-based Persistency**: Settings are saved to `data/settings.json` for persistence across server restarts.
-3.  **Storage Abstraction**: Interface-based storage design allows flexible persistence strategy changes.
+3.  **Storage Abstraction**: Interface-based storage design allows flexible persistence strategy changes with backward compatibility via default value backfilling.
 4.  **Mobile-First PWA**: Optimized for touch devices with a standalone app experience.
 5.  **Webhook Integration Pattern**: External SmartHome systems are integrated via HTTP callbacks (fallback when E3DC disabled).
 6.  **E3DC CLI Integration**: Battery control via e3dcset CLI tool with configurable command strings, supporting discharge lock and grid charging.
 7.  **Type Safety**: Zod schemas provide runtime validation and TypeScript types.
 8.  **Security-First Logging**: CLI outputs are sanitized to prevent credential leakage - development mode shows sanitized previews (200 chars), production mode shows only metadata.
+9.  **Visual Status Feedback**: Icon-based status indicators on the main screen provide immediate visual feedback for active SmartHome features, improving user awareness.
 
 ## External Dependencies
 
