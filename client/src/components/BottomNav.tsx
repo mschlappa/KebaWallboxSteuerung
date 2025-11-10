@@ -6,8 +6,8 @@ export default function BottomNav() {
 
   const navItems = [
     { path: "/", icon: Home, label: "Status" },
-    { path: "/logs", icon: FileText, label: "Logs" },
     { path: "/einstellungen", icon: Settings, label: "Einstellungen" },
+    { path: "/logs", icon: FileText, label: "Logs" },
   ];
 
   return (
