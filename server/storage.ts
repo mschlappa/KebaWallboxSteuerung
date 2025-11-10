@@ -134,11 +134,15 @@ export class MemStorage implements IStorage {
 
   getControlState(): ControlState {
     // Stelle sicher, dass immer alle Felder vorhanden sind (wichtig für Migration von alten Daten)
-    return {
+    const defaults: ControlState = {
       pvSurplus: false,
       nightCharging: false,
       batteryLock: false,
       gridCharging: false,
+    };
+    
+    return {
+      ...defaults,
       ...this.controlState,
     };
   }
