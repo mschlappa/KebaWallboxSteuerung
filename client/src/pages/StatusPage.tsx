@@ -439,7 +439,7 @@ export default function StatusPage() {
                   <div>
                     <p className="font-medium">PV-Überschussladung</p>
                     <p className="text-sm text-muted-foreground">
-                      Laden mit Solarstrom
+                      Die Wallbox wird nur mit überschüssigem Solarstrom versorgt
                     </p>
                   </div>
                 </div>
@@ -474,7 +474,7 @@ export default function StatusPage() {
                       <div>
                         <p className="font-medium">Batterie-Entladesperre</p>
                         <p className="text-sm text-muted-foreground">
-                          E3DC-Batterie geschützt
+                          Die Entladung der Hausbatterie ist gesperrt
                         </p>
                       </div>
                     </div>
@@ -506,7 +506,7 @@ export default function StatusPage() {
                       <div>
                         <p className="font-medium">Netzstrom-Laden</p>
                         <p className="text-sm text-muted-foreground">
-                          Batterie aus Netz laden
+                          Die Hausbatterie wird mit Netzstrom geladen
                         </p>
                       </div>
                     </div>
