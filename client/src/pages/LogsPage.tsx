@@ -106,20 +106,14 @@ export default function LogsPage() {
         <div className="max-w-4xl mx-auto px-4 space-y-6">
           <div>
             <h1 className="text-2xl font-bold mb-2">Logs</h1>
-            <p className="text-sm text-muted-foreground">
-              Kommunikation und System-Ereignisse
-            </p>
           </div>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="text-base">Log-Level</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col gap-2">
-                <label className="text-sm text-muted-foreground">
-                  Aktueller Log-Level
-                </label>
                 <Select
                   value={logSettings?.level || "info"}
                   onValueChange={(value) => updateLogLevelMutation.mutate(value as LogLevel)}

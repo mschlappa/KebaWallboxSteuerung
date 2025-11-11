@@ -466,7 +466,7 @@ export default function StatusPage() {
                   <div>
                     <p className="font-medium">PV-Überschussladung</p>
                     <p className="text-sm text-muted-foreground">
-                      Die Wallbox wird nur mit überschüssigem Solarstrom versorgt
+                      Das Auto wird nur mit Solarstrom geladen
                     </p>
                   </div>
                 </div>
@@ -568,7 +568,7 @@ export default function StatusPage() {
           <DrawerHeader>
             <DrawerTitle>Kabelverbindung</DrawerTitle>
             <DrawerDescription>
-              Status der Kabelverbindung an der Wallbox
+              Status der Kabelverbindung zum Auto
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-4 space-y-4">

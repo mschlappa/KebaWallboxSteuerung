@@ -91,6 +91,12 @@ class E3dcClient {
       return;
     }
 
+    // Kombiniere Prefix + Parameter mit Leerzeichen
+    const prefix = this.config?.prefix?.trim() || '';
+    const fullCommand = prefix 
+      ? `${prefix} ${command}`.trim() 
+      : command;
+
     // Rate Limiting: Warten wenn letzter Befehl weniger als 5 Sekunden her ist
     const now = Date.now();
     const timeSinceLastCommand = now - this.lastCommandTime;
@@ -105,9 +111,9 @@ class E3dcClient {
 
     try {
       // Command ohne Sanitization loggen (Credentials sind in externer Datei)
-      log('info', 'system', `E3DC: ${commandName}`, `Befehl: ${command}`);
+      log('info', 'system', `E3DC: ${commandName}`, `Befehl: ${fullCommand}`);
       
-      const { stdout, stderr } = await execAsync(command);
+      const { stdout, stderr } = await execAsync(fullCommand);
       
       if (stdout) {
         const sanitized = this.sanitizeOutput(stdout, command, sensitiveValues);

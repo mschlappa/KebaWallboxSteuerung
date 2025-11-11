@@ -1,6 +1,6 @@
 {
   "pvSurplus": false,
   "nightCharging": false,
-  "batteryLock": true,
+  "batteryLock": false,
   "gridCharging": false
 }

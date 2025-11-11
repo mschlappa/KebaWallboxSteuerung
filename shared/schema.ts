@@ -26,6 +26,7 @@ export type NightChargingSchedule = z.infer<typeof nightChargingScheduleSchema>;
 
 export const e3dcConfigSchema = z.object({
   enabled: z.boolean(),
+  prefix: z.string().optional(),
   dischargeLockEnableCommand: z.string().optional(),
   dischargeLockDisableCommand: z.string().optional(),
   gridChargeEnableCommand: z.string().optional(),

@@ -2,19 +2,18 @@
   "wallboxIp": "192.168.40.16",
   "pvSurplusOnUrl": "http://192.168.40.11:8083/fhem?detail=autoWallboxPV&cmd.autoWallboxPV=set%20autoWallboxPV%20on",
   "pvSurplusOffUrl": "http://192.168.40.11:8083/fhem?detail=autoWallboxPV&cmd.autoWallboxPV=set%20autoWallboxPV%20off",
-  "batteryLockOnUrl": "http://192.168.40.11:8083/fhem?detail=s10EntladenSperren&cmd.s10EntladenSperren=set%20s10EntladenSperren%20on",
-  "batteryLockOffUrl": "http://192.168.40.11:8083/fhem?detail=s10EntladenSperren&cmd.s10EntladenSperren=set%20s10EntladenSperren%20off",
   "nightChargingSchedule": {
-    "enabled": true,
+    "enabled": false,
     "startTime": "00:00",
     "endTime": "05:00"
   },
   "e3dc": {
     "enabled": true,
-    "dischargeLockEnableCommand": "/opt/keba-wallbox/e3dcset -p /opt/keba-wallbox/e3dcset.config -d 1",
-    "dischargeLockDisableCommand": "/opt/keba-wallbox/e3dcset -p /opt/keba-wallbox/e3dcset.config -a",
-    "gridChargeEnableCommand": "/opt/keba-wallbox/e3dcset -p /opt/keba-wallbox/e3dcset.config -c 2500 -e 6000",
-    "gridChargeDisableCommand": "/opt/keba-wallbox/e3dcset -p /opt/keba-wallbox/e3dcset.config -e 0",
+    "prefix": "/opt/keba-wallbox/e3dcset -p /opt/keba-wallbox/e3dcset.config",
+    "dischargeLockEnableCommand": "-d 1",
+    "dischargeLockDisableCommand": "-a",
+    "gridChargeEnableCommand": "-c 2500 -e 6000",
+    "gridChargeDisableCommand": "-e 0",
     "gridChargeDuringNightCharging": false
   }
 }
