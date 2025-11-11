@@ -29,9 +29,9 @@ export default function StatusPage() {
   const [currentAmpere, setCurrentAmpere] = useState(16);
   const previousNightChargingRef = useRef<boolean | undefined>(undefined);
   const [waitingForConfirmation, setWaitingForConfirmation] = useState(false);
-  const [showTotalEnergy, setShowTotalEnergy] = useState(false);
   const [showDetailsDrawer, setShowDetailsDrawer] = useState(false);
   const [showCableDrawer, setShowCableDrawer] = useState(false);
+  const [showEnergyDrawer, setShowEnergyDrawer] = useState(false);
 
   const { data: status, isLoading, error } = useQuery<WallboxStatus>({
     queryKey: ["/api/wallbox/status"],
@@ -236,7 +236,8 @@ export default function StatusPage() {
   const power = status?.power || 0;
   const energySession = (status?.ePres || 0) / 1000;
   const energyTotal = (status?.eTotal || 0) / 1000;
-  const energy = showTotalEnergy ? energyTotal : energySession;
+  // Zeige immer aktuelle Energie auf der Kachel
+  const energy = energySession;
   const phases = status?.phases || 0;
 
   const getStatusIcons = () => {
@@ -377,11 +378,11 @@ export default function StatusPage() {
 
             <StatusCard
               icon={Battery}
-              title={showTotalEnergy ? "Geladene Energie (Gesamt)" : "Geladene Energie (Aktuell)"}
+              title="Geladene Energie"
               value={isLoading ? "..." : energy.toFixed(1)}
               unit="kWh"
               status={isCharging ? "charging" : "stopped"}
-              onClick={() => setShowTotalEnergy(!showTotalEnergy)}
+              onClick={() => setShowEnergyDrawer(true)}
             />
 
             <StatusCard
@@ -617,6 +618,55 @@ export default function StatusPage() {
           <DrawerFooter>
             <DrawerClose asChild>
               <Button variant="outline" data-testid="button-close-cable-drawer">Schließen</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={showEnergyDrawer} onOpenChange={setShowEnergyDrawer}>
+        <DrawerContent data-testid="drawer-energy-details">
+          <DrawerHeader>
+            <DrawerTitle>Geladene Energie</DrawerTitle>
+            <DrawerDescription>
+              Übersicht über die geladene Energie
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="px-4 pb-4 space-y-4">
+            {/* Aktuelle Ladesitzung */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+                  <Battery className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Aktuelle Sitzung</p>
+                  <p className="text-lg font-semibold" data-testid="text-energy-session">
+                    {energySession.toFixed(1)} kWh
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Gesamtenergie */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-500/10 dark:bg-green-400/10">
+                  <Zap className="w-6 h-6 text-green-500 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Gesamtenergie</p>
+                  <p className="text-lg font-semibold" data-testid="text-energy-total">
+                    {energyTotal.toFixed(1)} kWh
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DrawerFooter>
+            <DrawerClose asChild>
+              <Button variant="outline" data-testid="button-close-energy-drawer">Schließen</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
