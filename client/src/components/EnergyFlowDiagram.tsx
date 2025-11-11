@@ -16,7 +16,7 @@ interface EnergyFlowDiagramProps {
 export default function EnergyFlowDiagram({ data }: EnergyFlowDiagramProps) {
   const formatPower = (watts: number) => {
     if (watts === 0) return "0 W";
-    if (Math.abs(watts) >= 1000) {
+    if (Math.abs(watts) >= 10000) {
       return `${(watts / 1000).toFixed(1)} kW`;
     }
     return `${Math.round(watts)} W`;
