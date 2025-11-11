@@ -318,6 +318,11 @@ export default function StatusPage() {
     const then = new Date(timestamp);
     const diffInSeconds = Math.floor((now.getTime() - then.getTime()) / 1000);
 
+    // Schutz gegen Zukunfts-Timestamps (Systemuhr-Differenzen)
+    if (diffInSeconds < 0) {
+      return 'gerade eben';
+    }
+
     if (diffInSeconds < 60) {
       return `vor ${diffInSeconds} Sekunde${diffInSeconds !== 1 ? 'n' : ''}`;
     } else if (diffInSeconds < 3600) {
