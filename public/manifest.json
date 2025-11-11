@@ -1,7 +1,7 @@
 {
-  "name": "KEBA Wallbox Steuerung",
-  "short_name": "Wallbox",
-  "description": "Steuern Sie Ihre KEBA Wallbox",
+  "name": "EnergyLink",
+  "short_name": "EnergyLink",
+  "description": "Intelligente Wallbox-Steuerung mit SmartHome-Integration",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
