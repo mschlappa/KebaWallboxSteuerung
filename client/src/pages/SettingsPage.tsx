@@ -151,8 +151,9 @@ export default function SettingsPage() {
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto pb-24 pt-6">
         <div className="max-w-2xl mx-auto px-4 space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Einstellungen</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <img src="/apple-touch-icon.png" alt="EnergyLink" className="w-10 h-10 rounded-lg" />
+            <h1 className="text-2xl font-bold mb-0">EnergyLink Einstellungen</h1>
           </div>
 
           <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
