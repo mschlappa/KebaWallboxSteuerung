@@ -859,11 +859,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
-  // Starte Scheduler (prüfe jede Minute)
-  log("info", "system", "Nachtladungs-Scheduler wird gestartet - prüft alle 60 Sekunden");
-  nightChargingSchedulerInterval = setInterval(checkNightChargingSchedule, 60 * 1000);
+  // Starte Scheduler synchronisiert zur vollen Minute
+  log("info", "system", "Nachtladungs-Scheduler wird gestartet - prüft jede volle Minute");
   
-  // Initiale Prüfung beim Start
+  // Berechne Verzögerung bis zur nächsten vollen Minute
+  const now = new Date();
+  const secondsUntilNextMinute = 60 - now.getSeconds();
+  const msUntilNextMinute = (secondsUntilNextMinute * 1000) - now.getMilliseconds();
+  
+  log("debug", "system", `Scheduler-Synchronisation: Nächste Prüfung in ${secondsUntilNextMinute}s zur vollen Minute`);
+  
+  // Erste Prüfung zur nächsten vollen Minute
+  setTimeout(() => {
+    checkNightChargingSchedule();
+    
+    // Danach jede Minute exakt zur vollen Minute
+    nightChargingSchedulerInterval = setInterval(checkNightChargingSchedule, 60 * 1000);
+  }, msUntilNextMinute);
+  
+  // Initiale Prüfung beim Start (optional - prüft sofort)
   checkNightChargingSchedule();
 
   const httpServer = createServer(app);
