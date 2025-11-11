@@ -6,15 +6,18 @@ import type { E3dcLiveData } from "@shared/schema";
  * 
  * Die Register-Adressen basieren auf der E3DC S10 Modbus-Dokumentation.
  * Alle Leistungswerte sind INT32 (2 Register), SOC/Autarkie/Eigenverbrauch sind UINT16 (1 Register).
+ * 
+ * WICHTIG: modbus-serial nutzt 0-basierte Offsets, nicht die Holding-Register-Nummern.
+ * Holding Register 40067 → Offset 66 (40067 - 40001 = 66)
  */
 const E3DC_REGISTERS = {
-  PV_POWER: 40067,           // INT32, Watt
-  BATTERY_POWER: 40069,      // INT32, Watt (negativ = Entladung)
-  HOUSE_POWER: 40071,        // INT32, Watt
-  GRID_POWER: 40073,         // INT32, Watt (negativ = Einspeisung)
-  BATTERY_SOC: 40082,        // UINT16, Prozent
-  AUTARKY: 40083,            // UINT16, Prozent
-  SELF_CONSUMPTION: 40084,   // UINT16, Prozent
+  PV_POWER: 66,              // Holding Register 40067, INT32, Watt
+  BATTERY_POWER: 68,         // Holding Register 40069, INT32, Watt (negativ = Entladung)
+  HOUSE_POWER: 70,           // Holding Register 40071, INT32, Watt
+  GRID_POWER: 72,            // Holding Register 40073, INT32, Watt (negativ = Einspeisung)
+  BATTERY_SOC: 81,           // Holding Register 40082, UINT16, Prozent
+  AUTARKY: 82,               // Holding Register 40083, UINT16, Prozent
+  SELF_CONSUMPTION: 83,      // Holding Register 40084, UINT16, Prozent
 } as const;
 
 const MODBUS_PORT = 502;
@@ -36,14 +39,23 @@ export class E3dcModbusService {
   }
 
   /**
-   * Verbindung zum E3DC S10 herstellen
+   * Verbindung zum E3DC S10 herstellen (oder wiederherstellen)
    */
   async connect(ipAddress: string): Promise<void> {
+    // Wenn bereits verbunden, keine neue Connection aufbauen
     if (this.isConnected) {
-      return; // Bereits verbunden
+      return;
     }
 
     try {
+      // Schließe alte Connection falls vorhanden (z.B. nach Fehler)
+      try {
+        this.client.close(() => {});
+      } catch {
+        // Ignoriere Fehler beim Schließen
+      }
+
+      // Neue Connection aufbauen
       await this.client.connectTCP(ipAddress, { port: MODBUS_PORT });
       this.client.setID(1); // Modbus Unit ID (Standard: 1)
       this.isConnected = true;
@@ -73,32 +85,45 @@ export class E3dcModbusService {
    * INT32-Wert aus 2 Modbus-Registern lesen (Big-Endian)
    */
   private async readInt32(registerAddress: number): Promise<number> {
-    const data = await this.client.readHoldingRegisters(registerAddress, 2);
-    const high = data.data[0];
-    const low = data.data[1];
-    
-    // INT32 aus 2x UINT16 zusammensetzen (Big-Endian)
-    const uint32 = (high << 16) | low;
-    
-    // Konvertierung zu INT32 (Zweier-Komplement)
-    return uint32 > 0x7FFFFFFF ? uint32 - 0x100000000 : uint32;
+    try {
+      const data = await this.client.readHoldingRegisters(registerAddress, 2);
+      const high = data.data[0];
+      const low = data.data[1];
+      
+      // INT32 aus 2x UINT16 zusammensetzen (Big-Endian)
+      const uint32 = (high << 16) | low;
+      
+      // Konvertierung zu INT32 (Zweier-Komplement)
+      return uint32 > 0x7FFFFFFF ? uint32 - 0x100000000 : uint32;
+    } catch (error) {
+      // Bei Lese-Fehler: Connection als ungültig markieren
+      this.isConnected = false;
+      this.client.close(() => {});
+      throw error;
+    }
   }
 
   /**
    * UINT16-Wert aus 1 Modbus-Register lesen
    */
   private async readUint16(registerAddress: number): Promise<number> {
-    const data = await this.client.readHoldingRegisters(registerAddress, 1);
-    return data.data[0];
+    try {
+      const data = await this.client.readHoldingRegisters(registerAddress, 1);
+      return data.data[0];
+    } catch (error) {
+      // Bei Lese-Fehler: Connection als ungültig markieren
+      this.isConnected = false;
+      this.client.close(() => {});
+      throw error;
+    }
   }
 
   /**
    * Live-Daten vom E3DC S10 abrufen
    */
   async readLiveData(wallboxPower: number = 0): Promise<E3dcLiveData> {
-    if (!this.isConnected) {
-      throw new Error("Keine Verbindung zum E3DC S10. Bitte zuerst connect() aufrufen.");
-    }
+    // Keine explizite Connection-Prüfung - wenn nicht connected, 
+    // werden die readInt32/readUint16 Methoden einen Fehler werfen
 
     try {
       // Alle Register parallel auslesen für maximale Performance

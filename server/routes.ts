@@ -537,13 +537,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Hole Wallbox-Leistung aus aktuellem Status
-      let wallboxPower = 0;
-      try {
-        const wallboxStatus = storage.getWallboxStatus();
-        wallboxPower = wallboxStatus?.power || 0;
-      } catch (error) {
-        log("warning", "system", "Konnte Wallbox-Leistung nicht abrufen, verwende 0W", error instanceof Error ? error.message : String(error));
+      // Hole Wallbox-Leistung direkt über UDP (Report 3)
+      let wallboxPower = 0; // in Watt
+      if (settings?.wallboxIp) {
+        try {
+          const report3 = await sendUdpCommand(settings.wallboxIp, "report 3");
+          // Power ist in Report 3 als P (in Milliwatt), dividiert durch 1000000 für kW
+          // Wir brauchen Watt, also dividieren wir nur durch 1000
+          wallboxPower = (report3?.P || 0) / 1000;
+        } catch (error) {
+          log("warning", "system", "Konnte Wallbox-Leistung nicht abrufen, verwende 0W", error instanceof Error ? error.message : String(error));
+        }
       }
 
       // Verbinde zum E3DC Modbus und lese Live-Daten
@@ -556,7 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Lese Live-Daten mit aktueller Wallbox-Leistung
         const liveData = await e3dcService.readLiveData(wallboxPower);
         
-        log("debug", "system", `E3DC Live-Daten erfolgreich abgerufen: PV=${liveData.pvPower}W, Batterie=${liveData.batteryPower}W, Haus=${liveData.housePower}W`);
+        log("debug", "system", `E3DC Live-Daten erfolgreich abgerufen: PV=${liveData.pvPower}W, Batterie=${liveData.batteryPower}W, Haus=${liveData.housePower}W, Wallbox=${liveData.wallboxPower}W`);
         
         res.json(liveData);
       } catch (error) {
