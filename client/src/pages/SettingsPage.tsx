@@ -221,7 +221,7 @@ export default function SettingsPage() {
                         id="night-start"
                         type="time"
                         {...form.register("nightChargingSchedule.startTime")}
-                        className="h-10 text-sm border-0 bg-transparent px-0 text-left"
+                        className="h-10 text-sm border-0 bg-transparent px-0 time-input-left"
                         data-testid="input-night-start"
                       />
                     </div>
@@ -233,7 +233,7 @@ export default function SettingsPage() {
                         id="night-end"
                         type="time"
                         {...form.register("nightChargingSchedule.endTime")}
-                        className="h-10 text-sm border-0 bg-transparent px-0 text-left"
+                        className="h-10 text-sm border-0 bg-transparent px-0 time-input-left"
                         data-testid="input-night-end"
                       />
                     </div>

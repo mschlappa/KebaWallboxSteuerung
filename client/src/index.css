@@ -285,4 +285,16 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+
+  /* iOS Safari time input alignment fix */
+  input[type="time"].time-input-left {
+    -webkit-text-align: left;
+    text-align: left;
+    direction: ltr;
+  }
+  
+  input[type="time"].time-input-left::-webkit-datetime-edit {
+    text-align: left;
+    padding-left: 0;
+  }
 }
