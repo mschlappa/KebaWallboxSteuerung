@@ -13,8 +13,8 @@
     "enabled": true,
     "dischargeLockEnableCommand": "/opt/keba-wallbox/e3dcset -p /opt/keba-wallbox/e3dcset.config -d 1",
     "dischargeLockDisableCommand": "/opt/keba-wallbox/e3dcset -p /opt/keba-wallbox/e3dcset.config -a",
-    "gridChargeEnableCommand": "/opt/keba-wallbox/e3dcset -p /opt/keba-wallbox/e3dcset.config -c 2500 -d 1 -e 6000",
-    "gridChargeDisableCommand": "",
+    "gridChargeEnableCommand": "/opt/keba-wallbox/e3dcset -p /opt/keba-wallbox/e3dcset.config -c 2500 -e 6000",
+    "gridChargeDisableCommand": "/opt/keba-wallbox/e3dcset -p /opt/keba-wallbox/e3dcset.config -e 0"",
     "gridChargeDuringNightCharging": false
   }
 }
