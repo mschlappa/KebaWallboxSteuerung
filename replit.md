@@ -1,12 +1,15 @@
-# KEBA Wallbox PWA - Entwicklungsleitfaden
+# EnergyLink - Entwicklungsleitfaden
 
 ## Overview
 
-This Progressive Web App (PWA) controls a KEBA Wallbox charging station for electric vehicles. It provides real-time status monitoring, charge control, and SmartHome integration features. The application enables users to monitor charging status, start/stop charging, and configure automated charging based on PV surplus, night schedules, and battery lockout rules. **Now includes E3DC integration via CLI tool (e3dcset) for battery discharge control and grid charging during night charging intervals.** It adheres to Material Design 3 principles with a mobile-first approach, optimized for German users.
+EnergyLink is a Progressive Web App (PWA) that controls a KEBA Wallbox charging station for electric vehicles. It provides real-time status monitoring, charge control, and SmartHome integration features. The application enables users to monitor charging status, start/stop charging, and configure automated charging based on PV surplus, night schedules, and battery lockout rules. **Now includes E3DC integration via CLI tool (e3dcset) for battery discharge control and grid charging during night charging intervals.** It adheres to Material Design 3 principles with a mobile-first approach, optimized for German users.
 
 **Latest Update (Nov 2025):** 
-- Kabelstatus-Tracking wurde vom Frontend (LocalStorage) ins Backend migriert für persistentes Tracking auch bei geschlossener App. Die Wallbox-Status-Polling-Logik erkennt automatisch Kabelstatus-Änderungen und speichert Zeitstempel in `data/plug-tracking.json`. Tracking-Updates sind gegen ungültige Werte (UDP-Timeouts) abgesichert.
-- E3DC Integration reorganisiert: Neues "Prefix"-Feld separiert gemeinsamen CLI-Tool-Pfad und Config-Parameter vom befehlsspezifischen Parametern. Backend kombiniert automatisch Prefix + Parameter für E3DC-Befehle. Wallbox IP-Adresse an oberster Position in Einstellungen.
+- App umbenannt in "EnergyLink" - alle Meta-Tags, PWA-Manifest und Dokumentation aktualisiert
+- Neues Favicon mit grünem EV-Lade-Icon (Auto + Sonne + Blitz) in allen erforderlichen Größen
+- "Letztes Update" Anzeige auf Statusseite: zeigt Wallbox-Polling-Zeitstempel mit absoluter Zeit und intelligenter relativer Zeitangabe (Sekunden/Minuten/Stunden/Tage), linksbündig ausgerichtet
+- Kabelstatus-Tracking vom Frontend ins Backend migriert für persistentes Tracking
+- E3DC Integration reorganisiert mit Prefix-Feld für CLI-Tool-Pfad
 
 ## User Preferences
 
