@@ -2,22 +2,22 @@ import ModbusRTU from "modbus-serial";
 import type { E3dcLiveData } from "@shared/schema";
 
 /**
- * E3DC S10 Modbus TCP Register Mapping
+ * E3DC S10 Modbus TCP Register Mapping (Simple Mode)
  * 
- * Die Register-Adressen basieren auf der E3DC S10 Modbus-Dokumentation.
- * Alle Leistungswerte sind INT32 (2 Register), SOC/Autarkie/Eigenverbrauch sind UINT16 (1 Register).
+ * Quelle: Offizielle E3DC Modbus/TCP-Schnittstelle Dokumentation
+ * Alle Leistungswerte sind INT32 (2 Register).
  * 
  * WICHTIG: modbus-serial nutzt 0-basierte Offsets, nicht die Holding-Register-Nummern.
- * Holding Register 40067 → Offset 66 (40067 - 40001 = 66)
+ * Holding Register 40068 → Offset 67 (40068 - 40001 = 67)
  */
 const E3DC_REGISTERS = {
-  PV_POWER: 66,              // Holding Register 40067, INT32, Watt
-  BATTERY_POWER: 68,         // Holding Register 40069, INT32, Watt (negativ = Entladung)
-  HOUSE_POWER: 70,           // Holding Register 40071, INT32, Watt
-  GRID_POWER: 72,            // Holding Register 40073, INT32, Watt (negativ = Einspeisung)
-  BATTERY_SOC: 81,           // Holding Register 40082, UINT16, Prozent
-  AUTARKY: 82,               // Holding Register 40083, UINT16, Prozent
-  SELF_CONSUMPTION: 83,      // Holding Register 40084, UINT16, Prozent
+  PV_POWER: 67,              // Holding Register 40068, INT32, Watt
+  BATTERY_POWER: 69,         // Holding Register 40070, INT32, Watt (negativ = Entladung)
+  HOUSE_POWER: 71,           // Holding Register 40072, INT32, Watt
+  GRID_POWER: 73,            // Holding Register 40074, INT32, Watt (negativ = Einspeisung)
+  WALLBOX_POWER: 77,         // Holding Register 40078, INT32, Watt
+  AUTARKY_SELFCONS: 81,      // Holding Register 40082, UINT16, High Byte = Autarkie %, Low Byte = Eigenverbrauch %
+  BATTERY_SOC: 82,           // Holding Register 40083, UINT16, Prozent
 } as const;
 
 const MODBUS_PORT = 502;
@@ -90,6 +90,9 @@ export class E3dcModbusService {
       const high = data.data[0];
       const low = data.data[1];
       
+      // DEBUG: RAW-Register-Werte ausgeben
+      console.log(`[E3DC Modbus DEBUG] Register ${registerAddress}: high=${high} (0x${high.toString(16)}), low=${low} (0x${low.toString(16)})`);
+      
       // INT32 aus 2x UINT16 zusammensetzen (Big-Endian)
       const uint32 = (high << 16) | low;
       
@@ -109,6 +112,10 @@ export class E3dcModbusService {
   private async readUint16(registerAddress: number): Promise<number> {
     try {
       const data = await this.client.readHoldingRegisters(registerAddress, 1);
+      
+      // DEBUG: RAW-Register-Wert ausgeben
+      console.log(`[E3DC Modbus DEBUG] Register ${registerAddress}: value=${data.data[0]} (0x${data.data[0].toString(16)})`);
+      
       return data.data[0];
     } catch (error) {
       // Bei Lese-Fehler: Connection als ungültig markieren
@@ -121,21 +128,42 @@ export class E3dcModbusService {
   /**
    * Live-Daten vom E3DC S10 abrufen
    */
-  async readLiveData(wallboxPower: number = 0): Promise<E3dcLiveData> {
+  async readLiveData(fallbackWallboxPower: number = 0): Promise<E3dcLiveData> {
     // Keine explizite Connection-Prüfung - wenn nicht connected, 
     // werden die readInt32/readUint16 Methoden einen Fehler werfen
 
     try {
       // Alle Register parallel auslesen für maximale Performance
-      const [pvPower, batteryPower, housePower, gridPower, batterySoc, autarky, selfConsumption] = await Promise.all([
+      const [pvPower, batteryPower, housePower, gridPower, wallboxPower, autarkySelfCons, batterySoc] = await Promise.all([
         this.readInt32(E3DC_REGISTERS.PV_POWER),
         this.readInt32(E3DC_REGISTERS.BATTERY_POWER),
         this.readInt32(E3DC_REGISTERS.HOUSE_POWER),
         this.readInt32(E3DC_REGISTERS.GRID_POWER),
+        this.readInt32(E3DC_REGISTERS.WALLBOX_POWER),
+        this.readUint16(E3DC_REGISTERS.AUTARKY_SELFCONS),
         this.readUint16(E3DC_REGISTERS.BATTERY_SOC),
-        this.readUint16(E3DC_REGISTERS.AUTARKY),
-        this.readUint16(E3DC_REGISTERS.SELF_CONSUMPTION),
       ]);
+
+      // Register 40082: Autarkie (High Byte) & Eigenverbrauch (Low Byte)
+      const autarky = (autarkySelfCons >> 8) & 0xFF;
+      const selfConsumption = autarkySelfCons & 0xFF;
+
+      // Wenn Wallbox-Leistung aus E3DC 0 ist, verwende Fallback (UDP Report 3)
+      const finalWallboxPower = wallboxPower !== 0 ? wallboxPower : fallbackWallboxPower;
+
+      // DEBUG: RAW-Werte ausgeben
+      console.log(`[E3DC Modbus DEBUG] RAW-Werte:
+        PV: ${pvPower} W
+        Batterie: ${batteryPower} W
+        Haus: ${housePower} W
+        Netz: ${gridPower} W
+        Wallbox (E3DC): ${wallboxPower} W
+        Wallbox (Fallback): ${fallbackWallboxPower} W
+        Wallbox (Final): ${finalWallboxPower} W
+        Autarkie/Eigenverbrauch Register: ${autarkySelfCons} (0x${autarkySelfCons.toString(16)})
+        Autarkie: ${autarky}%
+        Eigenverbrauch: ${selfConsumption}%
+        Batterie SOC: ${batterySoc}%`);
 
       return {
         pvPower,
@@ -143,7 +171,7 @@ export class E3dcModbusService {
         batterySoc,
         housePower,
         gridPower,
-        wallboxPower,
+        wallboxPower: finalWallboxPower,
         autarky,
         selfConsumption,
         timestamp: new Date().toISOString(),
