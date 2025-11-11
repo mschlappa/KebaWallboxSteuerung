@@ -9,13 +9,14 @@ import type { E3dcLiveData } from "@shared/schema";
  * 
  * WICHTIG: modbus-serial nutzt 0-basierte Offsets, nicht die Holding-Register-Nummern.
  * Holding Register 40068 → Offset 67 (40068 - 40001 = 67)
+ * 
+ * HINWEIS: Wallbox-Leistung wird NICHT aus E3DC gelesen, sondern immer von KEBA UDP Report 3
  */
 const E3DC_REGISTERS = {
   PV_POWER: 67,              // Holding Register 40068, INT32, Watt
   BATTERY_POWER: 69,         // Holding Register 40070, INT32, Watt (negativ = Entladung)
   HOUSE_POWER: 71,           // Holding Register 40072, INT32, Watt
   GRID_POWER: 73,            // Holding Register 40074, INT32, Watt (negativ = Einspeisung)
-  WALLBOX_POWER: 77,         // Holding Register 40078, INT32, Watt
   AUTARKY_SELFCONS: 81,      // Holding Register 40082, UINT16, High Byte = Autarkie %, Low Byte = Eigenverbrauch %
   BATTERY_SOC: 82,           // Holding Register 40083, UINT16, Prozent
 } as const;
@@ -127,19 +128,20 @@ export class E3dcModbusService {
 
   /**
    * Live-Daten vom E3DC S10 abrufen
+   * 
+   * @param kebaWallboxPower - Wallbox-Leistung von KEBA UDP Report 3 (immer verwendet, da E3DC keine Wallbox hat)
    */
-  async readLiveData(fallbackWallboxPower: number = 0): Promise<E3dcLiveData> {
+  async readLiveData(kebaWallboxPower: number = 0): Promise<E3dcLiveData> {
     // Keine explizite Connection-Prüfung - wenn nicht connected, 
     // werden die readInt32/readUint16 Methoden einen Fehler werfen
 
     try {
-      // Alle Register parallel auslesen für maximale Performance
-      const [pvPower, batteryPower, housePower, gridPower, wallboxPower, autarkySelfCons, batterySoc] = await Promise.all([
+      // Alle E3DC Register parallel auslesen (OHNE Wallbox - die kommt von KEBA)
+      const [pvPower, batteryPower, housePower, gridPower, autarkySelfCons, batterySoc] = await Promise.all([
         this.readInt32(E3DC_REGISTERS.PV_POWER),
         this.readInt32(E3DC_REGISTERS.BATTERY_POWER),
         this.readInt32(E3DC_REGISTERS.HOUSE_POWER),
         this.readInt32(E3DC_REGISTERS.GRID_POWER),
-        this.readInt32(E3DC_REGISTERS.WALLBOX_POWER),
         this.readUint16(E3DC_REGISTERS.AUTARKY_SELFCONS),
         this.readUint16(E3DC_REGISTERS.BATTERY_SOC),
       ]);
@@ -148,22 +150,17 @@ export class E3dcModbusService {
       const autarky = (autarkySelfCons >> 8) & 0xFF;
       const selfConsumption = autarkySelfCons & 0xFF;
 
-      // Wenn Wallbox-Leistung aus E3DC 0 ist, verwende Fallback (UDP Report 3)
-      const finalWallboxPower = wallboxPower !== 0 ? wallboxPower : fallbackWallboxPower;
-
       // DEBUG: RAW-Werte ausgeben
       console.log(`[E3DC Modbus DEBUG] RAW-Werte:
         PV: ${pvPower} W
         Batterie: ${batteryPower} W
         Haus: ${housePower} W
         Netz: ${gridPower} W
-        Wallbox (E3DC): ${wallboxPower} W
-        Wallbox (Fallback): ${fallbackWallboxPower} W
-        Wallbox (Final): ${finalWallboxPower} W
+        Batterie SOC: ${batterySoc}%
         Autarkie/Eigenverbrauch Register: ${autarkySelfCons} (0x${autarkySelfCons.toString(16)})
         Autarkie: ${autarky}%
         Eigenverbrauch: ${selfConsumption}%
-        Batterie SOC: ${batterySoc}%`);
+        Wallbox (KEBA UDP): ${kebaWallboxPower} W`);
 
       return {
         pvPower,
@@ -171,7 +168,7 @@ export class E3dcModbusService {
         batterySoc,
         housePower,
         gridPower,
-        wallboxPower: finalWallboxPower,
+        wallboxPower: kebaWallboxPower,
         autarky,
         selfConsumption,
         timestamp: new Date().toISOString(),
