@@ -23,8 +23,21 @@ class E3dcClient {
   private sanitizeOutput(value: string, command: string, extraSecrets: string[]): string {
     let sanitized = value;
 
-    sanitized = sanitized.replace(new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '[COMMAND REDACTED]');
+    // E3DC-spezifische Patterns für Debug-Ausgaben
+    const e3dcPatterns = [
+      /e3dc_user=\S+/gi,
+      /e3dc_password=\S+/gi,
+      /aes_password=\S+/gi,
+    ];
 
+    e3dcPatterns.forEach(pattern => {
+      sanitized = sanitized.replace(pattern, (match) => {
+        const key = match.split('=')[0];
+        return `${key}=xxx`;
+      });
+    });
+
+    // Generische sensitive Patterns
     const sensitivePatterns = [
       /--password[=\s]+\S+/gi,
       /--pass[=\s]+\S+/gi,
@@ -87,30 +100,25 @@ class E3dcClient {
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
 
-    const isDevelopment = process.env.NODE_ENV !== 'production';
     const sensitiveValues = this.getSensitiveValues();
 
     try {
+      const sanitizedCommand = this.sanitizeOutput(command, command, sensitiveValues);
       console.log(`[E3DC] Führe aus: ${commandName}`);
+      console.log(`[E3DC] Befehl: ${sanitizedCommand}`);
       
       const { stdout, stderr } = await execAsync(command);
       
-      if (isDevelopment) {
-        if (stdout) {
-          const sanitized = this.sanitizeOutput(stdout, command, sensitiveValues);
-          console.log(`[E3DC] ${commandName} - Ausgabe [sanitized preview ${stdout.length} chars]:`, sanitized.slice(0, 200));
-        }
-        if (stderr) {
-          const sanitized = this.sanitizeOutput(stderr, command, sensitiveValues);
-          console.error(`[E3DC] ${commandName} - Fehler-Ausgabe [sanitized preview ${stderr.length} chars]:`, sanitized.slice(0, 200));
-        }
-      } else {
-        if (stdout) {
-          console.log(`[E3DC] ${commandName} - Ausgabe erhalten (${stdout.length} Zeichen)`);
-        }
-        if (stderr) {
-          console.error(`[E3DC] ${commandName} - Fehler-Ausgabe erhalten (${stderr.length} Zeichen)`);
-        }
+      if (stdout) {
+        const sanitized = this.sanitizeOutput(stdout, command, sensitiveValues);
+        console.log(`[E3DC] ${commandName} - Ausgabe (${stdout.length} Zeichen):`);
+        console.log(sanitized);
+      }
+      
+      if (stderr) {
+        const sanitized = this.sanitizeOutput(stderr, command, sensitiveValues);
+        console.error(`[E3DC] ${commandName} - Fehler-Ausgabe (${stderr.length} Zeichen):`);
+        console.error(sanitized);
       }
       
       // Zeitpunkt des letzten Befehls aktualisieren
@@ -120,11 +128,8 @@ class E3dcClient {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const sanitizedError = this.sanitizeOutput(errorMessage, command, sensitiveValues);
       
-      if (isDevelopment) {
-        console.error(`[E3DC] ${commandName} fehlgeschlagen:`, sanitizedError.slice(0, 200));
-      } else {
-        console.error(`[E3DC] Befehlsausführung fehlgeschlagen für: ${commandName}`);
-      }
+      console.error(`[E3DC] ${commandName} fehlgeschlagen:`);
+      console.error(sanitizedError);
       throw new Error(`Failed to execute ${commandName}`);
     }
   }
