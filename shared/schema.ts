@@ -12,6 +12,7 @@ export const wallboxStatusSchema = z.object({
   i1: z.number().optional(),
   i2: z.number().optional(),
   i3: z.number().optional(),
+  lastUpdated: z.string().optional(), // ISO timestamp
 });
 
 export type WallboxStatus = z.infer<typeof wallboxStatusSchema>;

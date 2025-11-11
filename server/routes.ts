@@ -361,6 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         i1: report3?.["I1"] ? report3["I1"] / 1000 : undefined,
         i2: report3?.["I2"] ? report3["I2"] / 1000 : undefined,
         i3: report3?.["I3"] ? report3["I3"] / 1000 : undefined,
+        lastUpdated: new Date().toISOString(),
       };
 
       // Tracke Änderungen des Kabelstatus im Hintergrund (nur bei gültigen Werten)
