@@ -180,41 +180,45 @@ export default function SettingsPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="space-y-0.5">
-                  <Label htmlFor="battery-lock-control" className="text-sm font-medium">
-                    Batterie entladen sperren
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Verhindert Entladung der Hausbatterie
-                  </p>
-                </div>
-                <Switch
-                  id="battery-lock-control"
-                  checked={controlForm.watch("batteryLock")}
-                  onCheckedChange={(checked) => handleControlChange("batteryLock", checked)}
-                  disabled={isLoadingControls || updateControlsMutation.isPending}
-                  data-testid="switch-battery-lock"
-                />
-              </div>
+              {form.watch("e3dc.enabled") && (
+                <>
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="battery-lock-control" className="text-sm font-medium">
+                        Batterie entladen sperren
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Verhindert Entladung der Hausbatterie
+                      </p>
+                    </div>
+                    <Switch
+                      id="battery-lock-control"
+                      checked={controlForm.watch("batteryLock")}
+                      onCheckedChange={(checked) => handleControlChange("batteryLock", checked)}
+                      disabled={isLoadingControls || updateControlsMutation.isPending}
+                      data-testid="switch-battery-lock"
+                    />
+                  </div>
 
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="space-y-0.5">
-                  <Label htmlFor="grid-charging-control" className="text-sm font-medium">
-                    Netzstrom-Laden
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Laden des Hausspeichers mit Netzstrom
-                  </p>
-                </div>
-                <Switch
-                  id="grid-charging-control"
-                  checked={controlForm.watch("gridCharging")}
-                  onCheckedChange={(checked) => handleControlChange("gridCharging", checked)}
-                  disabled={isLoadingControls || updateControlsMutation.isPending}
-                  data-testid="switch-grid-charging"
-                />
-              </div>
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="grid-charging-control" className="text-sm font-medium">
+                        Netzstrom-Laden
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Laden des Hausspeichers mit Netzstrom
+                      </p>
+                    </div>
+                    <Switch
+                      id="grid-charging-control"
+                      checked={controlForm.watch("gridCharging")}
+                      onCheckedChange={(checked) => handleControlChange("gridCharging", checked)}
+                      disabled={isLoadingControls || updateControlsMutation.isPending}
+                      data-testid="switch-grid-charging"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <Separator />

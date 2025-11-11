@@ -237,14 +237,14 @@ export default function StatusPage() {
         color: "text-blue-500 dark:text-blue-400"
       });
     }
-    if (controlState?.batteryLock) {
+    if (settings?.e3dc?.enabled && controlState?.batteryLock) {
       icons.push({
         icon: ShieldOff,
         label: "Batterie-Entladesperre aktiv",
         color: "text-orange-500 dark:text-orange-400"
       });
     }
-    if (controlState?.gridCharging) {
+    if (settings?.e3dc?.enabled && controlState?.gridCharging) {
       icons.push({
         icon: PlugZap,
         label: "Netzstrom-Laden aktiv",
