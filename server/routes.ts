@@ -563,9 +563,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const settings = storage.getSettings();
       const currentState = storage.getControlState();
       
-      // Prüfe ob URLs konfiguriert sind
-      if (!settings?.pvSurplusOnUrl && !settings?.batteryLockOnUrl) {
-        log("warning", "system", "Keine SmartHome-URLs konfiguriert - Status-Synchronisation übersprungen");
+      // Prüfe ob PV-URLs konfiguriert sind
+      if (!settings?.pvSurplusOnUrl) {
+        log("warning", "system", "Keine PV-Überschuss URL konfiguriert - Status-Synchronisation übersprungen");
         return res.json(currentState);
       }
       
@@ -573,25 +573,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pvDeviceName = extractDeviceNameFromUrl(settings?.pvSurplusOnUrl);
       const pvBaseUrl = extractBaseUrlFromUrl(settings?.pvSurplusOnUrl);
       
-      // WICHTIG: Wenn E3DC aktiviert ist, NICHT FHEM für Batterie-Status verwenden!
-      const useE3dcForBattery = settings?.e3dc?.enabled && e3dcClient.isConfigured();
-      const batteryDeviceName = useE3dcForBattery ? null : extractDeviceNameFromUrl(settings?.batteryLockOnUrl);
-      const batteryBaseUrl = useE3dcForBattery ? null : extractBaseUrlFromUrl(settings?.batteryLockOnUrl);
-      
       // Warne wenn Gerätename oder Basis-URL nicht extrahiert werden konnte
       if (settings?.pvSurplusOnUrl && (!pvDeviceName || !pvBaseUrl)) {
         log("warning", "system", "PV-Überschuss URL konnte nicht geparst werden", `URL: ${settings.pvSurplusOnUrl}`);
       }
-      if (!useE3dcForBattery && settings?.batteryLockOnUrl && (!batteryDeviceName || !batteryBaseUrl)) {
-        log("warning", "system", "Batteriesperrung URL konnte nicht geparst werden", `URL: ${settings.batteryLockOnUrl}`);
-      }
       
-      // Frage externe Status ab (parallel für bessere Performance)
-      // Batterie-Status nur von FHEM holen, wenn E3DC NICHT aktiviert ist
-      const [pvState, batteryState] = await Promise.all([
-        pvDeviceName && pvBaseUrl ? getFhemDeviceState(pvBaseUrl, pvDeviceName) : Promise.resolve(null),
-        batteryDeviceName && batteryBaseUrl ? getFhemDeviceState(batteryBaseUrl, batteryDeviceName) : Promise.resolve(null),
-      ]);
+      // Frage PV-Status ab
+      const pvState = pvDeviceName && pvBaseUrl ? await getFhemDeviceState(pvBaseUrl, pvDeviceName) : null;
       
       // Aktualisiere ControlState nur wenn externe Status erfolgreich abgefragt wurden
       const newState = { ...currentState };
@@ -601,13 +589,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newState.pvSurplus = pvState;
         hasChanges = true;
         log("info", "system", `PV-Überschussladung extern geändert auf ${pvState ? "ein" : "aus"}`);
-      }
-      
-      // Batterie-Status nur aktualisieren, wenn NICHT E3DC verwendet wird
-      if (!useE3dcForBattery && batteryState !== null && batteryState !== currentState.batteryLock) {
-        newState.batteryLock = batteryState;
-        hasChanges = true;
-        log("info", "system", `Batterie entladen sperren extern geändert auf ${batteryState ? "ein" : "aus"}`);
       }
       
       if (hasChanges) {
@@ -666,42 +647,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return `${hours}:${minutes}`;
   };
 
-  // Hilfsfunktion für Batterie-Entladesperre (E3DC oder Webhook)
+  // Hilfsfunktion für Batterie-Entladesperre (E3DC)
   const lockBatteryDischarge = async (settings: any) => {
     if (settings?.e3dc?.enabled && e3dcClient.isConfigured()) {
-      try {
-        log("info", "system", `Batterie-Entladesperre: Verwende E3DC-Integration`);
-        await e3dcClient.lockDischarge();
-        return; // Erfolgreich, kein Fallback nötig
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-        log("error", "system", `E3DC-Fehler beim Sperren der Entladung, verwende Webhook-Fallback`, errorMessage);
-      }
-    }
-    
-    // Webhook-Fallback (entweder weil E3DC deaktiviert/nicht konfiguriert oder E3DC-Fehler aufgetreten)
-    if (settings?.batteryLockOnUrl) {
-      log("info", "system", `Batterie-Entladesperre: Verwende Webhook`);
-      await callSmartHomeUrl(settings.batteryLockOnUrl);
+      log("info", "system", `Batterie-Entladesperre: Verwende E3DC-Integration`);
+      await e3dcClient.lockDischarge();
+    } else {
+      log("warning", "system", `Batterie-Entladesperre: E3DC nicht konfiguriert`);
     }
   };
 
   const unlockBatteryDischarge = async (settings: any) => {
     if (settings?.e3dc?.enabled && e3dcClient.isConfigured()) {
-      try {
-        log("info", "system", `Batterie-Entladesperre aufheben: Verwende E3DC-Integration`);
-        await e3dcClient.unlockDischarge();
-        return; // Erfolgreich, kein Fallback nötig
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-        log("error", "system", `E3DC-Fehler beim Freigeben der Entladung, verwende Webhook-Fallback`, errorMessage);
-      }
-    }
-    
-    // Webhook-Fallback (entweder weil E3DC deaktiviert/nicht konfiguriert oder E3DC-Fehler aufgetreten)
-    if (settings?.batteryLockOffUrl) {
-      log("info", "system", `Batterie-Entladesperre aufheben: Verwende Webhook`);
-      await callSmartHomeUrl(settings.batteryLockOffUrl);
+      log("info", "system", `Batterie-Entladesperre aufheben: Verwende E3DC-Integration`);
+      await e3dcClient.unlockDischarge();
+    } else {
+      log("warning", "system", `Batterie-Entladesperre aufheben: E3DC nicht konfiguriert`);
     }
   };
 

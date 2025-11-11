@@ -43,8 +43,6 @@ export default function SettingsPage() {
       wallboxIp: "192.168.40.16",
       pvSurplusOnUrl: "",
       pvSurplusOffUrl: "",
-      batteryLockOnUrl: "",
-      batteryLockOffUrl: "",
       nightChargingSchedule: {
         enabled: false,
         startTime: "00:00",
@@ -372,9 +370,9 @@ export default function SettingsPage() {
 
                           <div className="p-3 rounded-md bg-muted">
                             <p className="text-xs text-muted-foreground">
-                              <strong>Hinweis:</strong> Bei aktivierter E3DC-Integration wird die 
-                              Batterie-Entladesperre direkt über das e3dcset CLI-Tool gesteuert. 
-                              Die konfigurierten Webhook-URLs dienen dann nur noch als Fallback.
+                              <strong>Hinweis:</strong> Die E3DC-Integration steuert die 
+                              Batterie-Entladesperre und das Netzstrom-Laden direkt über das e3dcset CLI-Tool. 
+                              Stellen Sie sicher, dass die entsprechenden Befehle korrekt konfiguriert sind.
                             </p>
                           </div>
                         </>
@@ -484,42 +482,6 @@ export default function SettingsPage() {
                         Die Wallbox startet automatisch zur Startzeit und stoppt zur Endzeit.
                         Zeitfenster können über Mitternacht gehen (z.B. 22:00 - 06:00).
                       </p>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="battery-lock">
-                  <AccordionTrigger className="text-base font-medium">
-                    Batterie entladen sperren URLs
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4 pt-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="battery-on" className="text-sm font-medium">
-                          URL zum Einschalten
-                        </Label>
-                        <Input
-                          id="battery-on"
-                          type="url"
-                          placeholder="https://smarthome.local/battery/lock"
-                          {...form.register("batteryLockOnUrl")}
-                          className="h-12"
-                          data-testid="input-battery-on"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="battery-off" className="text-sm font-medium">
-                          URL zum Ausschalten
-                        </Label>
-                        <Input
-                          id="battery-off"
-                          type="url"
-                          placeholder="https://smarthome.local/battery/unlock"
-                          {...form.register("batteryLockOffUrl")}
-                          className="h-12"
-                          data-testid="input-battery-off"
-                        />
-                      </div>
                     </div>
                   </AccordionContent>
                 </AccordionItem>

@@ -39,8 +39,6 @@ export const settingsSchema = z.object({
   wallboxIp: z.string(),
   pvSurplusOnUrl: z.string().optional(),
   pvSurplusOffUrl: z.string().optional(),
-  batteryLockOnUrl: z.string().optional(),
-  batteryLockOffUrl: z.string().optional(),
   nightChargingSchedule: nightChargingScheduleSchema.optional(),
   e3dc: e3dcConfigSchema.optional(),
 });
