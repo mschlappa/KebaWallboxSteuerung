@@ -1,0 +1,131 @@
+-- Journal begins at Wed 2023-05-03 05:23:19 CEST. --
+Nov 11 21:40:15 hmland node[4074811]: [INFO] [system] E3DC-Konfiguration wird gespeichert
+Nov 11 21:40:15 hmland node[4074811]: [INFO] [system] E3DC-Konfiguration erfolgreich gespeichert
+Nov 11 21:40:20 hmland node[4074811]: [E3DC Modbus] Verbindung zu 192.168.40.200:502 hergestellt
+Nov 11 21:42:11 hmland node[4074811]: [INFO] [wallbox] Laden erfolgreich gestartet
+Nov 11 21:49:25 hmland node[4074811]: [INFO] [wallbox] Laden erfolgreich gestoppt
+Nov 11 21:57:33 hmland systemd[1]: Stopping KEBA Wallbox Control PWA...
+Nov 11 21:57:33 hmland systemd[1]: keba-wallbox.service: Succeeded.
+Nov 11 21:57:33 hmland systemd[1]: Stopped KEBA Wallbox Control PWA.
+Nov 11 21:57:33 hmland systemd[1]: keba-wallbox.service: Consumed 17.637s CPU time.
+Nov 11 21:57:33 hmland systemd[1]: Started KEBA Wallbox Control PWA.
+Nov 11 21:57:36 hmland node[4074925]: [Storage] Einstellungen geladen aus: /opt/keba-wallbox/KebaWallboxSteuerung/data/settings.json
+Nov 11 21:57:36 hmland node[4074925]: [Storage] Control State geladen aus: /opt/keba-wallbox/KebaWallboxSteuerung/data/control-state.json
+Nov 11 21:57:36 hmland node[4074925]: [Storage] Plug Tracking geladen aus: /opt/keba-wallbox/KebaWallboxSteuerung/data/plug-tracking.json
+Nov 11 21:57:36 hmland node[4074925]: [INFO] [system] E3DC-Konfiguration beim Start geladen
+Nov 11 21:57:36 hmland node[4074925]: [INFO] [system] Nachtladungs-Scheduler wird gestartet - prüft jede volle Minute
+Nov 11 21:57:36 hmland node[4074925]: 9:57:36 PM [express] serving on port 8080
+Nov 11 21:57:38 hmland node[4074925]: [INFO] [system] Wallbox-Socket lauscht auf Port 7090
+Nov 11 21:57:38 hmland node[4074925]: [E3DC Modbus] Verbindung zu 192.168.40.200:502 hergestellt
+Nov 11 21:57:38 hmland node[4074925]: [E3DC Modbus DEBUG] Register 67: high=0 (0x0), low=0 (0x0)
+Nov 11 21:57:38 hmland node[4074925]: [E3DC Modbus DEBUG] Register 69: high=65530 (0xfffa), low=65535 (0xffff)
+Nov 11 21:57:38 hmland node[4074925]: [E3DC Modbus DEBUG] Register 71: high=698 (0x2ba), low=0 (0x0)
+Nov 11 21:57:38 hmland node[4074925]: [E3DC Modbus DEBUG] Register 73: high=692 (0x2b4), low=0 (0x0)
+Nov 11 21:57:38 hmland node[4074925]: [E3DC Modbus DEBUG] Register 81: value=99 (0x63)
+Nov 11 21:57:38 hmland node[4074925]: [E3DC Modbus DEBUG] Register 82: value=21 (0x15)
+Nov 11 21:57:38 hmland node[4074925]: [E3DC Modbus DEBUG] RAW-Werte:
+Nov 11 21:57:38 hmland node[4074925]:         PV: 0 W
+Nov 11 21:57:38 hmland node[4074925]:         Batterie: -327681 W
+Nov 11 21:57:38 hmland node[4074925]:         Haus: 45744128 W
+Nov 11 21:57:38 hmland node[4074925]:         Netz: 45350912 W
+Nov 11 21:57:38 hmland node[4074925]:         Batterie SOC: 21%
+Nov 11 21:57:38 hmland node[4074925]:         Autarkie/Eigenverbrauch Register: 99 (0x63)
+Nov 11 21:57:38 hmland node[4074925]:         Autarkie: 0%
+Nov 11 21:57:38 hmland node[4074925]:         Eigenverbrauch: 99%
+Nov 11 21:57:38 hmland node[4074925]:         Wallbox (KEBA UDP): 0 W
+Nov 11 21:57:43 hmland node[4074925]: [E3DC Modbus DEBUG] Register 67: high=0 (0x0), low=0 (0x0)
+Nov 11 21:57:43 hmland node[4074925]: [E3DC Modbus DEBUG] Register 69: high=65530 (0xfffa), low=65535 (0xffff)
+Nov 11 21:57:43 hmland node[4074925]: [E3DC Modbus DEBUG] Register 71: high=706 (0x2c2), low=0 (0x0)
+Nov 11 21:57:43 hmland node[4074925]: [E3DC Modbus DEBUG] Register 73: high=700 (0x2bc), low=0 (0x0)
+Nov 11 21:57:43 hmland node[4074925]: [E3DC Modbus DEBUG] Register 81: value=99 (0x63)
+Nov 11 21:57:43 hmland node[4074925]: [E3DC Modbus DEBUG] Register 82: value=21 (0x15)
+Nov 11 21:57:43 hmland node[4074925]: [E3DC Modbus DEBUG] RAW-Werte:
+Nov 11 21:57:43 hmland node[4074925]:         PV: 0 W
+Nov 11 21:57:43 hmland node[4074925]:         Batterie: -327681 W
+Nov 11 21:57:43 hmland node[4074925]:         Haus: 46268416 W
+Nov 11 21:57:43 hmland node[4074925]:         Netz: 45875200 W
+Nov 11 21:57:43 hmland node[4074925]:         Batterie SOC: 21%
+Nov 11 21:57:43 hmland node[4074925]:         Autarkie/Eigenverbrauch Register: 99 (0x63)
+Nov 11 21:57:43 hmland node[4074925]:         Autarkie: 0%
+Nov 11 21:57:43 hmland node[4074925]:         Eigenverbrauch: 99%
+Nov 11 21:57:43 hmland node[4074925]:         Wallbox (KEBA UDP): 0 W
+Nov 11 21:57:49 hmland node[4074925]: [E3DC Modbus DEBUG] Register 67: high=0 (0x0), low=0 (0x0)
+Nov 11 21:57:49 hmland node[4074925]: [E3DC Modbus DEBUG] Register 69: high=65530 (0xfffa), low=65535 (0xffff)
+Nov 11 21:57:49 hmland node[4074925]: [E3DC Modbus DEBUG] Register 71: high=704 (0x2c0), low=0 (0x0)
+Nov 11 21:57:49 hmland node[4074925]: [E3DC Modbus DEBUG] Register 73: high=698 (0x2ba), low=0 (0x0)
+Nov 11 21:57:49 hmland node[4074925]: [E3DC Modbus DEBUG] Register 81: value=99 (0x63)
+Nov 11 21:57:49 hmland node[4074925]: [E3DC Modbus DEBUG] Register 82: value=21 (0x15)
+Nov 11 21:57:49 hmland node[4074925]: [E3DC Modbus DEBUG] RAW-Werte:
+Nov 11 21:57:49 hmland node[4074925]:         PV: 0 W
+Nov 11 21:57:49 hmland node[4074925]:         Batterie: -327681 W
+Nov 11 21:57:49 hmland node[4074925]:         Haus: 46137344 W
+Nov 11 21:57:49 hmland node[4074925]:         Netz: 45744128 W
+Nov 11 21:57:49 hmland node[4074925]:         Batterie SOC: 21%
+Nov 11 21:57:49 hmland node[4074925]:         Autarkie/Eigenverbrauch Register: 99 (0x63)
+Nov 11 21:57:49 hmland node[4074925]:         Autarkie: 0%
+Nov 11 21:57:49 hmland node[4074925]:         Eigenverbrauch: 99%
+Nov 11 21:57:49 hmland node[4074925]:         Wallbox (KEBA UDP): 0 W
+Nov 11 21:57:54 hmland node[4074925]: [E3DC Modbus DEBUG] Register 67: high=0 (0x0), low=0 (0x0)
+Nov 11 21:57:54 hmland node[4074925]: [E3DC Modbus DEBUG] Register 69: high=65530 (0xfffa), low=65535 (0xffff)
+Nov 11 21:57:54 hmland node[4074925]: [E3DC Modbus DEBUG] Register 71: high=708 (0x2c4), low=0 (0x0)
+Nov 11 21:57:54 hmland node[4074925]: [E3DC Modbus DEBUG] Register 73: high=702 (0x2be), low=0 (0x0)
+Nov 11 21:57:54 hmland node[4074925]: [E3DC Modbus DEBUG] Register 81: value=99 (0x63)
+Nov 11 21:57:54 hmland node[4074925]: [E3DC Modbus DEBUG] Register 82: value=21 (0x15)
+Nov 11 21:57:54 hmland node[4074925]: [E3DC Modbus DEBUG] RAW-Werte:
+Nov 11 21:57:54 hmland node[4074925]:         PV: 0 W
+Nov 11 21:57:54 hmland node[4074925]:         Batterie: -327681 W
+Nov 11 21:57:54 hmland node[4074925]:         Haus: 46399488 W
+Nov 11 21:57:54 hmland node[4074925]:         Netz: 46006272 W
+Nov 11 21:57:54 hmland node[4074925]:         Batterie SOC: 21%
+Nov 11 21:57:54 hmland node[4074925]:         Autarkie/Eigenverbrauch Register: 99 (0x63)
+Nov 11 21:57:54 hmland node[4074925]:         Autarkie: 0%
+Nov 11 21:57:54 hmland node[4074925]:         Eigenverbrauch: 99%
+Nov 11 21:57:54 hmland node[4074925]:         Wallbox (KEBA UDP): 0 W
+Nov 11 21:57:59 hmland node[4074925]: [E3DC Modbus DEBUG] Register 67: high=0 (0x0), low=0 (0x0)
+Nov 11 21:57:59 hmland node[4074925]: [E3DC Modbus DEBUG] Register 69: high=65530 (0xfffa), low=65535 (0xffff)
+Nov 11 21:57:59 hmland node[4074925]: [E3DC Modbus DEBUG] Register 71: high=728 (0x2d8), low=0 (0x0)
+Nov 11 21:57:59 hmland node[4074925]: [E3DC Modbus DEBUG] Register 73: high=722 (0x2d2), low=0 (0x0)
+Nov 11 21:57:59 hmland node[4074925]: [E3DC Modbus DEBUG] Register 81: value=99 (0x63)
+Nov 11 21:57:59 hmland node[4074925]: [E3DC Modbus DEBUG] Register 82: value=21 (0x15)
+Nov 11 21:57:59 hmland node[4074925]: [E3DC Modbus DEBUG] RAW-Werte:
+Nov 11 21:57:59 hmland node[4074925]:         PV: 0 W
+Nov 11 21:57:59 hmland node[4074925]:         Batterie: -327681 W
+Nov 11 21:57:59 hmland node[4074925]:         Haus: 47710208 W
+Nov 11 21:57:59 hmland node[4074925]:         Netz: 47316992 W
+Nov 11 21:57:59 hmland node[4074925]:         Batterie SOC: 21%
+Nov 11 21:57:59 hmland node[4074925]:         Autarkie/Eigenverbrauch Register: 99 (0x63)
+Nov 11 21:57:59 hmland node[4074925]:         Autarkie: 0%
+Nov 11 21:57:59 hmland node[4074925]:         Eigenverbrauch: 99%
+Nov 11 21:57:59 hmland node[4074925]:         Wallbox (KEBA UDP): 0 W
+Nov 11 21:58:04 hmland node[4074925]: [E3DC Modbus DEBUG] Register 67: high=0 (0x0), low=0 (0x0)
+Nov 11 21:58:04 hmland node[4074925]: [E3DC Modbus DEBUG] Register 69: high=65530 (0xfffa), low=65535 (0xffff)
+Nov 11 21:58:04 hmland node[4074925]: [E3DC Modbus DEBUG] Register 71: high=725 (0x2d5), low=0 (0x0)
+Nov 11 21:58:04 hmland node[4074925]: [E3DC Modbus DEBUG] Register 73: high=719 (0x2cf), low=0 (0x0)
+Nov 11 21:58:04 hmland node[4074925]: [E3DC Modbus DEBUG] Register 81: value=99 (0x63)
+Nov 11 21:58:04 hmland node[4074925]: [E3DC Modbus DEBUG] Register 82: value=21 (0x15)
+Nov 11 21:58:04 hmland node[4074925]: [E3DC Modbus DEBUG] RAW-Werte:
+Nov 11 21:58:04 hmland node[4074925]:         PV: 0 W
+Nov 11 21:58:04 hmland node[4074925]:         Batterie: -327681 W
+Nov 11 21:58:04 hmland node[4074925]:         Haus: 47513600 W
+Nov 11 21:58:04 hmland node[4074925]:         Netz: 47120384 W
+Nov 11 21:58:04 hmland node[4074925]:         Batterie SOC: 21%
+Nov 11 21:58:04 hmland node[4074925]:         Autarkie/Eigenverbrauch Register: 99 (0x63)
+Nov 11 21:58:04 hmland node[4074925]:         Autarkie: 0%
+Nov 11 21:58:04 hmland node[4074925]:         Eigenverbrauch: 99%
+Nov 11 21:58:04 hmland node[4074925]:         Wallbox (KEBA UDP): 0 W
+Nov 11 21:58:09 hmland node[4074925]: [E3DC Modbus DEBUG] Register 67: high=0 (0x0), low=0 (0x0)
+Nov 11 21:58:09 hmland node[4074925]: [E3DC Modbus DEBUG] Register 69: high=65530 (0xfffa), low=65535 (0xffff)
+Nov 11 21:58:09 hmland node[4074925]: [E3DC Modbus DEBUG] Register 71: high=713 (0x2c9), low=0 (0x0)
+Nov 11 21:58:09 hmland node[4074925]: [E3DC Modbus DEBUG] Register 73: high=707 (0x2c3), low=0 (0x0)
+Nov 11 21:58:09 hmland node[4074925]: [E3DC Modbus DEBUG] Register 81: value=99 (0x63)
+Nov 11 21:58:09 hmland node[4074925]: [E3DC Modbus DEBUG] Register 82: value=21 (0x15)
+Nov 11 21:58:09 hmland node[4074925]: [E3DC Modbus DEBUG] RAW-Werte:
+Nov 11 21:58:09 hmland node[4074925]:         PV: 0 W
+Nov 11 21:58:09 hmland node[4074925]:         Batterie: -327681 W
+Nov 11 21:58:09 hmland node[4074925]:         Haus: 46727168 W
+Nov 11 21:58:09 hmland node[4074925]:         Netz: 46333952 W
+Nov 11 21:58:09 hmland node[4074925]:         Batterie SOC: 21%
+Nov 11 21:58:09 hmland node[4074925]:         Autarkie/Eigenverbrauch Register: 99 (0x63)
+Nov 11 21:58:09 hmland node[4074925]:         Autarkie: 0%
+Nov 11 21:58:09 hmland node[4074925]:         Eigenverbrauch: 99%
+Nov 11 21:58:09 hmland node[4074925]:         Wallbox (KEBA UDP): 0 W

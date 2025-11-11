@@ -83,18 +83,18 @@ export class E3dcModbusService {
   }
 
   /**
-   * INT32-Wert aus 2 Modbus-Registern lesen (Big-Endian)
+   * INT32-Wert aus 2 Modbus-Registern lesen (Little-Endian / LSW first)
    */
   private async readInt32(registerAddress: number): Promise<number> {
     try {
       const data = await this.client.readHoldingRegisters(registerAddress, 2);
-      const high = data.data[0];
-      const low = data.data[1];
+      const low = data.data[0];   // LSW (Low Significant Word) zuerst
+      const high = data.data[1];  // MSW (Most Significant Word) danach
       
       // DEBUG: RAW-Register-Werte ausgeben
-      console.log(`[E3DC Modbus DEBUG] Register ${registerAddress}: high=${high} (0x${high.toString(16)}), low=${low} (0x${low.toString(16)})`);
+      console.log(`[E3DC Modbus DEBUG] Register ${registerAddress}: low=${low} (0x${low.toString(16)}), high=${high} (0x${high.toString(16)})`);
       
-      // INT32 aus 2x UINT16 zusammensetzen (Big-Endian)
+      // INT32 aus 2x UINT16 zusammensetzen (Little-Endian: LSW first)
       const uint32 = (high << 16) | low;
       
       // Konvertierung zu INT32 (Zweier-Komplement)
