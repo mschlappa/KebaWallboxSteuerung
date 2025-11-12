@@ -1,0 +1,34 @@
+Nov 12 21:53:39 hmland systemd[1]: Started KEBA Wallbox Control PWA.
+Nov 12 21:53:41 hmland node[4081586]: [Storage] Einstellungen geladen aus: /opt/keba-wallbox/EnergyLink/data/settings.json
+Nov 12 21:53:41 hmland node[4081586]: [Storage] Control State geladen aus: /opt/keba-wallbox/EnergyLink/data/control-state.json
+Nov 12 21:53:41 hmland node[4081586]: [Storage] Plug Tracking geladen aus: /opt/keba-wallbox/EnergyLink/data/plug-tracking.json
+Nov 12 21:53:41 hmland node[4081586]: [STARTUP-DEBUG] Environment DEMO_AUTOSTART: undefined
+Nov 12 21:53:41 hmland node[4081586]: [STARTUP-DEBUG] Settings demoMode: false
+Nov 12 21:53:41 hmland node[4081586]: [STARTUP-DEBUG] Settings object: {
+Nov 12 21:53:41 hmland node[4081586]:   "wallboxIp": "127.0.0.1",
+Nov 12 21:53:41 hmland node[4081586]:   "wallboxIpBackup": "192.168.40.16",
+Nov 12 21:53:41 hmland node[4081586]:   "e3dcIp": "127.0.0.1:5502",
+Nov 12 21:53:41 hmland node[4081586]:   "pvSurplusOnUrl": "http://127.0.0.1:8083/fhem?cmd.autoWallboxPV=on",
+Nov 12 21:53:41 hmland node[4081586]:   "pvSurplusOffUrl": "http://127.0.0.1:8083/fhem?cmd.autoWallboxPV=off",
+Nov 12 21:53:41 hmland node[4081586]:   "pvSurplusOnUrlBackup": "http://192.168.40.11:8083/fhem?detail=autoWallboxPV&cmd.autoWallboxPV=set%20autoWallboxPV%20on",
+Nov 12 21:53:41 hmland node[4081586]:   "pvSurplusOffUrlBackup": "http://192.168.40.11:8083/fhem?detail=autoWallboxPV&cmd.autoWallboxPV=set%20autoWallboxPV%20off",
+Nov 12 21:53:41 hmland node[4081586]:   "nightChargingSchedule": {
+Nov 12 21:53:41 hmland node[4081586]:     "enabled": true,
+Nov 12 21:53:41 hmland node[4081586]:     "startTime": "19:33",
+Nov 12 21:53:41 hmland node[4081586]:     "endTime": "19:35"
+Nov 12 21:53:41 hmland node[4081586]:   },
+Nov 12 21:53:41 hmland node[4081586]:   "e3dc": {
+Nov 12 21:53:41 hmland node[4081586]:     "enabled": true,
+Nov 12 21:53:41 hmland node[4081586]:     "prefix": "/opt/keba-wallbox/e3dcset -p /opt/keba-wallbox/e3dcset.config",
+Nov 12 21:53:41 hmland node[4081586]:     "dischargeLockEnableCommand": "-d 1",
+Nov 12 21:53:41 hmland node[4081586]:     "dischargeLockDisableCommand": "-a",
+Nov 12 21:53:41 hmland node[4081586]:     "gridChargeEnableCommand": "-c 2500 -e 6000",
+Nov 12 21:53:41 hmland node[4081586]:     "gridChargeDisableCommand": "-e 0",
+Nov 12 21:53:41 hmland node[4081586]:     "gridChargeDuringNightCharging": false
+Nov 12 21:53:41 hmland node[4081586]:   },
+Nov 12 21:53:41 hmland node[4081586]:   "demoMode": false
+Nov 12 21:53:41 hmland node[4081586]: }
+Nov 12 21:53:41 hmland node[4081586]: [STARTUP-DEBUG] shouldStartMock: false
+Nov 12 21:53:41 hmland node[4081586]: [INFO] [system] E3DC-Konfiguration beim Start geladen
+Nov 12 21:53:41 hmland node[4081586]: [INFO] [system] Scheduler für zeitgesteuerte Ladung wird gestartet - prüft jede volle Minute
+Nov 12 21:53:41 hmland node[4081586]: 9:53:41 PM [express] serving on port 8080

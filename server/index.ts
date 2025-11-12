@@ -54,16 +54,7 @@ app.use((req, res, next) => {
 
 (async () => {
   // Auto-Start Mock-Server wenn DEMO_AUTOSTART=true oder demoMode aktiviert ist
-  const settings = storage.getSettings();
-  const envVar = process.env.DEMO_AUTOSTART;
-  const demoMode = settings?.demoMode;
-  
-  console.log('[STARTUP-DEBUG] Environment DEMO_AUTOSTART:', envVar);
-  console.log('[STARTUP-DEBUG] Settings demoMode:', demoMode);
-  console.log('[STARTUP-DEBUG] Settings object:', JSON.stringify(settings, null, 2));
-  
-  const shouldStartMock = envVar === 'true' || demoMode === true;
-  console.log('[STARTUP-DEBUG] shouldStartMock:', shouldStartMock);
+  const shouldStartMock = process.env.DEMO_AUTOSTART === 'true' || storage.getSettings()?.demoMode;
   
   if (shouldStartMock) {
     try {
