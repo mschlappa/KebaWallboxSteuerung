@@ -490,22 +490,9 @@ export async function stopUnifiedMock(): Promise<void> {
   isRunning = false;
 }
 
-// Wenn direkt ausgeführt (nicht importiert), starte automatisch
-if (import.meta.url === `file://${process.argv[1]}`) {
-  startUnifiedMock().catch(err => {
-    console.error('Fehler beim Starten des Mock-Servers:', err);
-    process.exit(1);
-  });
-  
-  // Graceful Shutdown bei direkter Ausführung
-  const shutdown = async () => {
-    await stopUnifiedMock();
-    process.exit(0);
-  };
-  
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
-}
+// Hinweis: Auto-Start wurde entfernt - Mock wird nur via startUnifiedMock() gestartet
+// Wenn direkt ausgeführt werden soll: tsx server/unified-mock.ts
+// Dann manuell startUnifiedMock() aufrufen
 
 // Export für programmatischen Zugriff
 export { wallboxMockService, e3dcMockService };
