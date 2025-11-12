@@ -1,0 +1,38 @@
+Nov 12 21:20:55 hmland systemd[1]: Started KEBA Wallbox Control PWA.
+Nov 12 21:20:59 hmland node[4081093]: [Storage] Einstellungen geladen aus: /opt/keba-wallbox/EnergyLink/data/settings.json
+Nov 12 21:20:59 hmland node[4081093]: [Storage] Control State geladen aus: /opt/keba-wallbox/EnergyLink/data/control-state.json
+Nov 12 21:20:59 hmland node[4081093]: [Storage] Plug Tracking geladen aus: /opt/keba-wallbox/EnergyLink/data/plug-tracking.json
+Nov 12 21:20:59 hmland node[4081093]: [DEBUG] Wallbox-Mock initialisiert - E total: 10000000 Wh = 10000 kWh
+Nov 12 21:20:59 hmland node[4081093]: ╔════════════════════════════════════════════════════════════╗
+Nov 12 21:20:59 hmland node[4081093]: ║      EnergyLink Unified Mock Server (Demo-Modus)          ║
+Nov 12 21:20:59 hmland node[4081093]: ╚════════════════════════════════════════════════════════════╝
+Nov 12 21:20:59 hmland node[4081093]: [INFO] [system] E3DC-Konfiguration beim Start geladen
+Nov 12 21:20:59 hmland node[4081093]: [INFO] [system] Scheduler für zeitgesteuerte Ladung wird gestartet - prüft jede volle Minute
+Nov 12 21:20:59 hmland node[4081093]: ✅ [Wallbox-UDP] KEBA Mock läuft auf 0.0.0.0:7090
+Nov 12 21:20:59 hmland node[4081093]: 9:20:59 PM [express] serving on port 8080
+Nov 12 21:20:59 hmland node[4081093]: ✅ [FHEM-HTTP] FHEM Mock läuft auf 0.0.0.0:8083
+Nov 12 21:20:59 hmland node[4081093]:    Unterstützt FHEM-typische URLs für Status & Befehle
+Nov 12 21:20:59 hmland node[4081093]: 📋 Demo-Modus Konfiguration:
+Nov 12 21:20:59 hmland node[4081093]:    1. Wallbox IP: 127.0.0.1 (UDP Port 7090)
+Nov 12 21:20:59 hmland node[4081093]:    2. E3DC IP: 127.0.0.1:5502 (Modbus TCP)
+Nov 12 21:20:59 hmland node[4081093]:    3. FHEM Base-URL: http://127.0.0.1:8083/fhem
+Nov 12 21:20:59 hmland node[4081093]:    4. Demo-Modus in Einstellungen aktivieren
+Nov 12 21:20:59 hmland node[4081093]: 🔄 State-Synchronisation aktiv:
+Nov 12 21:20:59 hmland node[4081093]:    - Wallbox-Leistung → E3DC Grid-Berechnung
+Nov 12 21:20:59 hmland node[4081093]:    - PV-Überschuss → Battery Charging/Discharging
+Nov 12 21:20:59 hmland node[4081093]:    - FHEM Device States (autoWallboxPV, etc.)
+Nov 12 21:20:59 hmland node[4081093]:    - Realistische Tageszeit-Simulation
+Nov 12 21:20:59 hmland node[4081093]: ✅ [E3DC-Modbus] E3DC S10 Mock läuft auf 0.0.0.0:5502
+Nov 12 21:20:59 hmland node[4081093]:    Register 40067-40083 (Holding Registers) verfügbar
+Nov 12 21:21:18 hmland node[4081093]: [FHEM-HTTP] GET /fhem?detail=autoWallboxPV
+Nov 12 21:21:18 hmland node[4081093]: [FHEM-HTTP] Status-Abfrage: autoWallboxPV = off
+Nov 12 21:21:22 hmland node[4081093]: [ERROR] [wallbox] UDP-Socket-Fehler - bind EADDRINUSE 0.0.0.0:7090
+Nov 12 21:21:22 hmland node[4081093]: [FHEM-HTTP] GET /fhem?detail=autoWallboxPV
+Nov 12 21:21:22 hmland node[4081093]: [FHEM-HTTP] Status-Abfrage: autoWallboxPV = off
+Nov 12 21:21:28 hmland node[4081093]: [ERROR] [wallbox] UDP-Timeout nach 6004ms - IP: 127.0.0.1, Befehl: report 1
+Nov 12 21:21:28 hmland node[4081093]: Failed to get wallbox status: Error: UDP request timeout
+Nov 12 21:21:28 hmland node[4081093]:     at Timeout._onTimeout (file:///opt/keba-wallbox/EnergyLink/dist/index.js:793:12)
+Nov 12 21:21:28 hmland node[4081093]:     at listOnTimeout (node:internal/timers:581:17)
+Nov 12 21:21:28 hmland node[4081093]:     at process.processTimers (node:internal/timers:519:7)
+Nov 12 21:21:32 hmland node[4081093]: [FHEM-HTTP] GET /fhem?detail=autoWallboxPV
+Nov 12 21:21:32 hmland node[4081093]: [FHEM-HTTP] Status-Abfrage: autoWallboxPV = off
