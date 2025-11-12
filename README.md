@@ -7,7 +7,7 @@ _Version 2.0 – November 2025_
 ## 🎭 Live-Demo ausprobieren
 
 **Testen Sie die App ohne eigene Hardware:**  
-👉 [**EnergyLink Demo auf Replit**](https://energylink.replit.app)
+👉 [**EnergyLink Demo auf Replit**](https://energy-link-ypqwbwd8nv.replit.app)
 
 Die Demo simuliert eine KEBA P20 Wallbox und ein E3DC S10 System mit realistischen Daten, inklusive tageszeit-abhängiger PV-Produktion!
 
@@ -148,7 +148,7 @@ Detaillierte Kommunikationsprotokolle zur Fehlersuche
 - **Replit Autoscale Deployment:** Kostenlose Demo mit simulierten Daten
 - **Kosten:** ~$3-6/Monat (mit Replit Core Credits meist kostenlos)
 - **Vorteile:** Keine Installation, sofort nutzbar, zum Ausprobieren
-- **Link:** [EnergyLink Demo](https://energylink.replit.app)
+- **Link:** [EnergyLink Demo](https://energy-link-ypqwbwd8nv.replit.app)
 
 #### Option 2: Lokale Installation (für echte Hardware)
 - **Zielplattform:** Raspberry Pi, Home Server, NAS, Docker
@@ -161,7 +161,7 @@ Detaillierte Kommunikationsprotokolle zur Fehlersuche
 ### Als Progressive Web App (PWA) installieren
 
 1. **App öffnen:** Öffnen Sie die App-URL in Ihrem mobilen Browser
-   - Live-Demo: https://energylink.replit.app
+   - Live-Demo: https://energy-link-ypqwbwd8nv.replit.app
    - Lokale Installation: http://[server-ip]:8080
 
 2. **Zum Startbildschirm hinzufügen:**
