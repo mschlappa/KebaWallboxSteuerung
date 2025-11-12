@@ -1,0 +1,22 @@
+Nov 12 20:17:00 hmland node[4080232]: [DEBUG] [system] Scheduler für zeitgesteuerte Ladung läuft - Aktuelle Zeit: 20:17, Zeitsteuerung aktiviert: true, Zeitfenster: 19:33-19:35
+Nov 12 20:17:32 hmland node[4080232]: [DEBUG] [webhook] Frage FHEM-Gerätestatus ab - URL: http://192.168.40.11:8083/fhem?detail=autoWallboxPV, Gerät: autoWallboxPV
+Nov 12 20:17:32 hmland node[4080232]: [DEBUG] [webhook] FHEM-Gerätestatus empfangen - Gerät: autoWallboxPV, Status: off
+Nov 12 20:17:32 hmland node[4080232]: 8:17:32 PM [express] POST /api/controls/sync 200 in 161ms :: {"pvSurplus":false,"nightCharging":fals…
+Nov 12 20:18:00 hmland node[4080232]: [DEBUG] [system] Scheduler für zeitgesteuerte Ladung läuft - Aktuelle Zeit: 20:18, Zeitsteuerung aktiviert: true, Zeitfenster: 19:33-19:35
+Nov 12 20:18:15 hmland systemd[1]: Stopping KEBA Wallbox Control PWA...
+Nov 12 20:18:15 hmland systemd[1]: keba-wallbox.service: Succeeded.
+Nov 12 20:18:15 hmland systemd[1]: Stopped KEBA Wallbox Control PWA.
+Nov 12 20:18:15 hmland systemd[1]: keba-wallbox.service: Consumed 9.374s CPU time.
+Nov 12 20:18:15 hmland systemd[1]: Started KEBA Wallbox Control PWA.
+Nov 12 20:18:18 hmland node[4080390]: [Storage] Einstellungen geladen aus: /opt/keba-wallbox/EnergyLink/data/settings.json
+Nov 12 20:18:18 hmland node[4080390]: [Storage] Control State geladen aus: /opt/keba-wallbox/EnergyLink/data/control-state.json
+Nov 12 20:18:18 hmland node[4080390]: [Storage] Plug Tracking geladen aus: /opt/keba-wallbox/EnergyLink/data/plug-tracking.json
+Nov 12 20:18:18 hmland node[4080390]: [INFO] [system] E3DC-Konfiguration beim Start geladen
+Nov 12 20:18:18 hmland node[4080390]: [INFO] [system] Scheduler für zeitgesteuerte Ladung wird gestartet - prüft jede volle Minute
+Nov 12 20:18:18 hmland node[4080390]: 8:18:18 PM [express] serving on port 8080
+Nov 12 20:18:26 hmland node[4080390]: [INFO] [system] Wallbox UDP-Client initialisiert (ephemeral port)
+Nov 12 20:18:32 hmland node[4080390]: [ERROR] [wallbox] UDP-Timeout nach 6002ms - IP: 192.168.40.16, Befehl: report 1
+Nov 12 20:18:32 hmland node[4080390]: Failed to get wallbox status: Error: UDP request timeout
+Nov 12 20:18:32 hmland node[4080390]:     at Timeout._onTimeout (file:///opt/keba-wallbox/EnergyLink/dist/index.js:786:12)
+Nov 12 20:18:32 hmland node[4080390]:     at listOnTimeout (node:internal/timers:581:17)
+Nov 12 20:18:32 hmland node[4080390]:     at process.processTimers (node:internal/timers:519:7)
