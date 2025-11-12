@@ -108,18 +108,21 @@ Konfigurieren Sie Wallbox, E3DC und SmartHome-Verbindungen
 </tr>
 </table>
 
-### Protokollierung
+### SmartHome-Steuerung & Protokollierung
 
 <table>
 <tr>
+<td width="50%">
+<strong>Wallbox SmartHome-Steuerung</strong><br>
+Konfigurieren Sie zeitgesteuerte Ladung und PV-Überschussladung
+<br><br>
+<img src="docs/screenshots/wallbox-smarthome-steuerung.png" alt="SmartHome-Steuerung" width="100%">
+</td>
 <td width="50%">
 <strong>Logs & Diagnose</strong><br>
 Detaillierte Kommunikationsprotokolle zur Fehlersuche
 <br><br>
 <img src="docs/screenshots/logs-seite.png" alt="Logs-Seite" width="100%">
-</td>
-<td width="50%">
-<!-- Platzhalter für zukünftige Screenshots -->
 </td>
 </tr>
 </table>
