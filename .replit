@@ -98,12 +98,3 @@ author = "agent"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
-
-[[workflows.workflow]]
-name = "MockNeu"
-mode = "sequential"
-author = 21485159
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npx tsx server/unified-mock.ts"

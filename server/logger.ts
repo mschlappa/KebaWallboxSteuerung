@@ -14,7 +14,15 @@ export function log(level: LogLevel, category: "wallbox" | "webhook" | "system",
   const messageLevelPriority = logLevelPriority[level];
   
   if (messageLevelPriority >= currentLevelPriority) {
+    const now = new Date();
+    const timestamp = now.toLocaleTimeString('de-DE', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit',
+      fractionalSecondDigits: 3 
+    });
+    
     storage.addLog({ level, category, message, details });
-    console.log(`[${level.toUpperCase()}] [${category}] ${message}${details ? ` - ${details}` : ""}`);
+    console.log(`[${timestamp}] [${level.toUpperCase()}] [${category}] ${message}${details ? ` - ${details}` : ""}`);
   }
 }

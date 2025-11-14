@@ -2,6 +2,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import type { E3dcConfig } from '@shared/schema';
 import { log } from './logger';
+import { storage } from './storage';
+import path from 'path';
 
 const execAsync = promisify(exec);
 
@@ -85,12 +87,51 @@ class E3dcClient {
     return values;
   }
 
+  /**
+   * Führt Mock-E3DC-Befehl aus (Demo-Modus)
+   * Ruft e3dcset-mock.ts auf statt echtem CLI-Tool
+   */
+  private async executeMockCommand(mockCommand: string, commandName: string): Promise<void> {
+    const mockScriptPath = path.join(process.cwd(), 'server', 'e3dcset-mock.ts');
+    const fullCommand = `tsx ${mockScriptPath} ${mockCommand}`;
+    
+    try {
+      log('info', 'system', `E3DC Mock: ${commandName}`, `Befehl: ${mockCommand}`);
+      
+      const { stdout, stderr } = await execAsync(fullCommand);
+      
+      if (stdout) {
+        log('info', 'system', `E3DC Mock: ${commandName} - Ausgabe`, stdout.trim());
+      }
+      
+      if (stderr) {
+        log('warning', 'system', `E3DC Mock: ${commandName} - Fehler-Ausgabe`, stderr.trim());
+      }
+      
+      log('info', 'system', `E3DC Mock: ${commandName} erfolgreich ausgeführt`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log('error', 'system', `E3DC Mock: ${commandName} fehlgeschlagen`, errorMessage);
+      throw new Error(`Failed to execute ${commandName} (Mock)`);
+    }
+  }
+
   private async executeCommand(command: string | undefined, commandName: string): Promise<void> {
     if (!command || command.trim() === '') {
       log('info', 'system', `E3DC: ${commandName} - Kein Befehl konfiguriert, überspringe`);
       return;
     }
 
+    // Im Demo-Modus: Mock-Script verwenden statt echtes CLI
+    const settings = storage.getSettings();
+    if (settings?.demoMode) {
+      // Parse e3dcset-Befehle und konvertiere zu Mock-Format
+      // Beispiel: "e3dcset -s discharge 0" → "-s discharge 0"
+      const mockCommand = command.replace(/^e3dcset\s+/, '');
+      return this.executeMockCommand(mockCommand, commandName);
+    }
+
+    // Production-Modus: Echtes CLI verwenden
     // Kombiniere Prefix + Parameter mit Leerzeichen
     const prefix = this.config?.prefix?.trim() || '';
     const fullCommand = prefix 

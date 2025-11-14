@@ -1,11 +1,11 @@
 {
   "wallboxIp": "127.0.0.1",
-  "wallboxIpBackup": "",
+  "wallboxIpBackup": "192.168.40.16",
   "e3dcIp": "127.0.0.1:5502",
   "pvSurplusOnUrl": "http://127.0.0.1:8083/fhem?cmd.autoWallboxPV=on",
   "pvSurplusOffUrl": "http://127.0.0.1:8083/fhem?cmd.autoWallboxPV=off",
-  "pvSurplusOnUrlBackup": "",
-  "pvSurplusOffUrlBackup": "",
+  "pvSurplusOnUrlBackup": "http://127.0.0.1:8083/fhem?cmd.autoWallboxPV=on",
+  "pvSurplusOffUrlBackup": "http://127.0.0.1:8083/fhem?cmd.autoWallboxPV=off",
   "nightChargingSchedule": {
     "enabled": false,
     "startTime": "00:00",
@@ -13,12 +13,25 @@
   },
   "e3dc": {
     "enabled": true,
-    "prefix": "e3dcset -p e3dcset.config",
+    "prefix": "e3dcset",
     "dischargeLockEnableCommand": "-d 1",
     "dischargeLockDisableCommand": "-a",
     "gridChargeEnableCommand": "-c 2500 -e 6000",
     "gridChargeDisableCommand": "-a -e 0",
     "gridChargeDuringNightCharging": false
   },
-  "demoMode": true
+  "chargingStrategy": {
+    "activeStrategy": "off",
+    "minStartPowerWatt": 500,
+    "stopThresholdWatt": 1000,
+    "startDelaySeconds": 30,
+    "stopDelaySeconds": 60,
+    "physicalPhaseSwitch": 3,
+    "minCurrentChangeAmpere": 1,
+    "minChangeIntervalSeconds": 30
+  },
+  "demoMode": true,
+  "mockWallboxPhases": 1,
+  "mockTimeEnabled": true,
+  "mockDateTime": "2025-07-31T13:00"
 }

@@ -1,4 +1,16 @@
 import type { E3dcLiveData } from "@shared/schema";
+import fs from 'fs/promises';
+import path from 'path';
+import { log } from './logger';
+import { storage } from './storage';
+
+interface E3dcControlState {
+  maxDischargePower: number;   // Maximale Entladeleistung in Watt (1W = gesperrt, 3000W = normal)
+  gridCharging: boolean;       // true = Netzladen aktiv
+  gridChargePower: number;     // Ladeleistung in Watt
+  lastCommand: string;         // Letzter Befehl für Debug
+  lastCommandTime: string;     // Zeitstempel des letzten Befehls
+}
 
 /**
  * Mock E3DC Service für UI-Entwicklung ohne echte Hardware
@@ -9,10 +21,12 @@ import type { E3dcLiveData } from "@shared/schema";
  * - Batterie-Kapazität: 10 kWh
  * - Grid Import/Export abhängig von PV vs. Verbrauch
  * - Wallbox-Leistung wird separat von KEBA gelesen
+ * - Reagiert auf e3dcset-Mock-Befehle (Battery Lock, Grid Charging)
  */
 export class E3dcMockService {
   private readonly BATTERY_CAPACITY_KWH = 10; // 10 kWh Hausbatterie
   private readonly MAX_BATTERY_POWER = 3000; // 3 kW Be-/Entladeleistung
+  private readonly CONTROL_STATE_FILE = path.join(process.cwd(), 'data', 'e3dc-control-state.json');
   
   // State für dynamischen SOC
   private currentSoc: number = 50; // Start bei 50%
@@ -26,10 +40,28 @@ export class E3dcMockService {
   
   /**
    * Gibt die aktuelle Zeit in Europe/Berlin Zeitzone zurück
+   * Im Demo-Modus kann eine fixe Tageszeit und Datum über Settings konfiguriert werden
    */
   private getBerlinTime(): { hour: number; minute: number; month: number } {
     const now = new Date();
     const berlinTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+    
+    // Prüfe ob Mock-Zeit aktiviert und gesetzt ist
+    const settings = storage.getSettings();
+    if (settings?.demoMode && settings?.mockTimeEnabled && settings?.mockDateTime) {
+      // Parse mockDateTime (Format "YYYY-MM-DDTHH:MM")
+      const mockDate = new Date(settings.mockDateTime);
+      
+      if (!isNaN(mockDate.getTime())) {
+        return {
+          hour: mockDate.getHours(),
+          minute: mockDate.getMinutes(),
+          month: mockDate.getMonth()
+        };
+      }
+    }
+    
+    // Fallback: Echte Zeit verwenden
     return {
       hour: berlinTime.getHours(),
       minute: berlinTime.getMinutes(),
@@ -54,6 +86,25 @@ export class E3dcMockService {
   }
 
   /**
+   * Lädt E3DC Control State aus Mock-Datei (von e3dcset-mock geschrieben)
+   */
+  private async loadControlState(): Promise<E3dcControlState> {
+    try {
+      const data = await fs.readFile(this.CONTROL_STATE_FILE, 'utf-8');
+      return JSON.parse(data);
+    } catch {
+      // Default State wenn Datei nicht existiert
+      return {
+        maxDischargePower: 3000, // Default: volle Entladung
+        gridCharging: false,
+        gridChargePower: 0,
+        lastCommand: '',
+        lastCommandTime: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
    * Generiert Mock E3DC Live-Daten basierend auf Tageszeit
    * 
    * ENERGIEBILANZ:
@@ -66,57 +117,68 @@ export class E3dcMockService {
    * Formel: PV + Grid = House + Wallbox + BatteryPower
    * => Grid = House + Wallbox + BatteryPower - PV
    * 
+   * ECHTER E3DC VERHALTENSWEISE:
+   * - E3DC kennt Wallbox NICHT separat → zählt zum Hausverbrauch
+   * - Batterie lädt IMMER mit max 3000W wenn Überschuss vorhanden (und SOC < 100%)
+   * - Bei drohenendem Netzbezug: Batterieladung wird REDUZIERT um Grid auf 0W zu halten
+   * - REAGIERT auf e3dcset-Mock-Befehle (dischargeLock, gridCharging)
+   * 
    * @param wallboxPower - Aktuelle Wallbox-Leistung in Watt
-   * @param batteryLock - Wenn true, Batterie darf nicht entladen werden
-   * @param gridCharging - Wenn true, Batterie wird mit Netzstrom geladen
-   * @param gridChargePower - Ladeleistung in Watt wenn gridCharging aktiv
    */
-  async getLiveData(
-    wallboxPower: number = 0, 
-    batteryLock: boolean = false,
-    gridCharging: boolean = false,
-    gridChargePower: number = 2500
-  ): Promise<E3dcLiveData> {
+  async getLiveData(wallboxPower: number = 0): Promise<E3dcLiveData> {
+    // Lade Control State aus Mock-Datei (von e3dcset-mock geschrieben)
+    const controlState = await this.loadControlState();
+    const maxDischargePower = controlState.maxDischargePower;
+    const gridCharging = controlState.gridCharging;
+    const gridChargePower = controlState.gridChargePower;
     const now = new Date();
     const { hour, minute } = this.getBerlinTime();
-    const timeOfDay = hour + minute / 60; // 0-24
+    const timeOfDay = hour + minute / 60; // Realistische Tageszeit
 
-    // 1. PV-Produktion: Gauss-Kurve mit Peak um 12 Uhr
+    // 1. PV-Produktion: Realistisch basierend auf Jahreszeit und Tageszeit
     const pvPower = this.calculatePvPower(timeOfDay);
     
-    // 2. Hausverbrauch (ohne Wallbox): Basis-Last + tageszeit-abhängige Variation
+    // 2. Hausverbrauch (ohne Wallbox): Realistisch basierend auf Tageszeit
     const housePowerWithoutWallbox = this.calculateHousePower(timeOfDay);
     
-    // 3. Gesamtverbrauch = Haus + Wallbox
+    // 3. Gesamtverbrauch = Haus + Wallbox (E3DC kennt keinen Unterschied!)
     const totalConsumption = housePowerWithoutWallbox + wallboxPower;
     
     // 4. Überschuss/Defizit berechnen
     const surplus = pvPower - totalConsumption;
     
-    // 5. Batterie-Leistung berechnen (abhängig von Überschuss/Defizit und aktuellem SOC)
+    // 5. Batterie-Leistung berechnen - EXAKT WIE ECHTER E3DC!
     let batteryPower = 0;
     
-    // Grid Charging aktiv → Batterie lädt mit konfigurierter Leistung
+    // Grid Charging aktiv → Batterie lädt mit konfigurierter Leistung (erzwingt Netzbezug!)
     if (gridCharging && this.currentSoc < 95) {
       batteryPower = gridChargePower;
     }
-    // Normale Betriebslogik (wenn kein Grid Charging aktiv)
-    else if (surplus > 500) {
-      // PV-Überschuss vorhanden → Batterie lädt
-      // Nicht laden wenn SOC > 95%
+    // Normale Betriebslogik (wie echter E3DC)
+    else if (surplus > 0) {
+      // ÜBERSCHUSS: Batterie lädt mit min(3000W, verfügbarer Überschuss)
+      // → Automatisch kein Netzbezug, da nur verfügbarer Überschuss genutzt wird
       if (this.currentSoc < 95) {
-        batteryPower = Math.min(this.MAX_BATTERY_POWER, surplus * 0.85); // Max 3kW, 85% des Überschusses
+        batteryPower = Math.min(this.MAX_BATTERY_POWER, surplus);
       }
-    } else if (surplus < -200 && !batteryLock) {
-      // PV-Defizit → Batterie entlädt (NUR wenn nicht gesperrt!)
-      // Nicht entladen wenn SOC < 10%
+    } else if (surplus < 0) {
+      // DEFIZIT: Batterie entlädt, ABER maximal mit maxDischargePower
+      // maxDischargePower = 1W → quasi gesperrt (Battery Lock aktiv)
+      // maxDischargePower = 3000W → normale Entladung (Battery Lock inaktiv)
       if (this.currentSoc > 10) {
-        batteryPower = Math.max(-this.MAX_BATTERY_POWER, surplus * 1.0); // Max -3kW, 100% des Defizits
+        const actualMaxDischarge = Math.min(this.MAX_BATTERY_POWER, maxDischargePower);
+        batteryPower = Math.max(-actualMaxDischarge, surplus);
       }
     }
-    // Bei batteryLock: Entladen verhindert → batteryPower bleibt 0 oder positiv
+    // Bei maxDischargePower = 1W: Entladen praktisch verhindert → Netzbezug unvermeidbar
     
-    // 6. SOC aktualisieren basierend auf Leistung und verstrichener Zeit
+    // 6. Grid-Leistung berechnen (Energiebilanz)
+    // Grid = (House + Wallbox + BatteryCharge) - PV
+    // Grid > 0 = Netzbezug (unvermeidbar wenn Defizit > 3000W oder batteryLock aktiv)
+    // Grid < 0 = Einspeisung (wenn Überschuss > 3000W)
+    const gridPower = totalConsumption + batteryPower - pvPower;
+    
+    // 8. SOC aktualisieren basierend auf Leistung und verstrichener Zeit
     const currentTime = Date.now();
     const elapsedHours = (currentTime - this.lastUpdateTime) / (1000 * 60 * 60); // ms zu Stunden
     
@@ -130,23 +192,21 @@ export class E3dcMockService {
     this.currentSoc = Math.max(0, Math.min(100, this.currentSoc + socChange));
     this.lastUpdateTime = currentTime;
     
-    // 7. Grid-Leistung berechnen (Energiebilanz)
-    // Grid = (House + Wallbox + BatteryCharge) - PV
-    const gridPower = totalConsumption + batteryPower - pvPower;
-    
-    // 8. housePower für Frontend (mit Wallbox für E3DC-Display)
+    // 9. housePower für Frontend (mit Wallbox für E3DC-Display)
     const housePower = housePowerWithoutWallbox + wallboxPower;
     
-    // DEBUG: Energiebilanz-Logging
-    console.log('[E3DC-Mock] Energiebilanz:', {
+    // DEBUG: Energiebilanz-Logging - ECHTER E3DC VERHALTENSWEISE
+    log('debug', 'system', '[E3DC-Mock] Energiebilanz (wie echter E3DC)', JSON.stringify({
       housePowerWithoutWallbox: Math.round(housePowerWithoutWallbox),
       wallboxPower: Math.round(wallboxPower),
       totalConsumption: Math.round(totalConsumption),
       pvPower: Math.round(pvPower),
-      batteryPower: Math.round(batteryPower),
+      surplus: Math.round(surplus),
+      batteryPowerRequested: Math.round(surplus > 0 ? Math.min(3000, surplus) : 0),
+      batteryPowerActual: Math.round(batteryPower),
       gridPower: Math.round(gridPower),
       formula: `${Math.round(totalConsumption)} + ${Math.round(batteryPower)} - ${Math.round(pvPower)} = ${Math.round(gridPower)}`
-    });
+    }));
     
     // 9. Autarkie & Eigenverbrauch berechnen
     const { autarky, selfConsumption } = this.calculateEfficiency(pvPower, totalConsumption, gridPower);

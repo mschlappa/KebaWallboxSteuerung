@@ -19,6 +19,7 @@ import { e3dcMockService } from './e3dc-mock';
 // @ts-ignore - modbus-serial has incomplete type definitions
 import ModbusRTU from 'modbus-serial';
 import type { ControlState, Settings } from '@shared/schema';
+import { log } from './logger';
 
 // Port-Konfiguration
 const WALLBOX_UDP_PORT = 7090;
@@ -69,7 +70,7 @@ fhemDeviceStates.set('autoWallboxPV', false); // Standard: PV-Überschuss aus
 
 const fhemServer = http.createServer((req, res) => {
   const url = new URL(req.url || '', `http://${req.headers.host}`);
-  console.log(`[FHEM-HTTP] ${req.method} ${url.pathname}${url.search}`);
+  log("debug", "system", `[FHEM-HTTP] ${req.method} ${url.pathname}${url.search}`);
 
   // CORS Headers für lokale Entwicklung
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -96,7 +97,7 @@ const fhemServer = http.createServer((req, res) => {
     const deviceState = fhemDeviceStates.get(deviceName) ?? false;
     const stateStr = deviceState ? 'on' : 'off';
     
-    console.log(`[FHEM-HTTP] Status-Abfrage: ${deviceName} = ${stateStr}`);
+    log("debug", "system", `[FHEM-HTTP] Status-Abfrage: ${deviceName} = ${stateStr}`);
     
     // Generiere FHEM-typische HTML-Response
     const html = `
@@ -139,7 +140,7 @@ const fhemServer = http.createServer((req, res) => {
 
   if (deviceName && newState !== null) {
     fhemDeviceStates.set(deviceName, newState);
-    console.log(`[FHEM-HTTP] Befehl ausgeführt: ${deviceName} = ${newState ? 'on' : 'off'}`);
+    log("debug", "system", `[FHEM-HTTP] Befehl ausgeführt: ${deviceName} = ${newState ? 'on' : 'off'}`);
     
     // FHEM-typische Response
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -153,12 +154,12 @@ const fhemServer = http.createServer((req, res) => {
 });
 
 fhemServer.on('listening', () => {
-  console.log(`✅ [FHEM-HTTP] FHEM Mock läuft auf ${HOST}:${FHEM_HTTP_PORT}`);
-  console.log(`   Unterstützt FHEM-typische URLs für Status & Befehle`);
+  log("info", "system", `✅ [FHEM-HTTP] FHEM Mock läuft auf ${HOST}:${FHEM_HTTP_PORT}`);
+  log("info", "system", `   Unterstützt FHEM-typische URLs für Status & Befehle`);
 });
 
 fhemServer.on('error', (err) => {
-  console.error(`[FHEM-HTTP] Server Error:`, err);
+  log("error", "system", `[FHEM-HTTP] Server Error:`, err instanceof Error ? err.message : String(err));
 });
 
 // =============================================================================
@@ -168,13 +169,13 @@ fhemServer.on('error', (err) => {
 const udpServer = dgram.createSocket('udp4');
 
 udpServer.on('error', (err) => {
-  console.error(`[Wallbox-UDP] Server Error:\n${err.stack}`);
+  log('error', 'system', '[Wallbox-UDP] Server Error', err.stack || err.message);
   udpServer.close();
 });
 
 udpServer.on('message', (msg, rinfo) => {
   const message = msg.toString().trim();
-  console.log(`[Wallbox-UDP] Received: "${message}" from ${rinfo.address}:${rinfo.port}`);
+  log("debug", "system", `[Wallbox-UDP] Received: "${message}" from ${rinfo.address}:${rinfo.port}`);
   
   let response: any;
   
@@ -194,7 +195,7 @@ udpServer.on('message', (msg, rinfo) => {
     const pvMode = message.split(' ')[2];
     if (pvMode === '1' || pvMode === '0') {
       wallboxMockService.setPvSurplusMode(pvMode === '1');
-      console.log(`[Wallbox-UDP] PV-Surplus-Modus ${pvMode === '1' ? 'aktiviert (1-Phase, 6-32A)' : 'deaktiviert (3-Phase, 6-16A)'}`);
+      log("debug", "system", `[Wallbox-UDP] PV-Surplus-Modus ${pvMode === '1' ? 'aktiviert (1-Phase, 6-32A)' : 'deaktiviert (3-Phase, 6-16A)'}`);
       response = { "TCH-OK": "done" };
     } else {
       response = { "TCH-ERR": "invalid mode value" };
@@ -208,9 +209,9 @@ udpServer.on('message', (msg, rinfo) => {
     const responseStr = JSON.stringify(response);
     udpServer.send(responseStr, rinfo.port, rinfo.address, (err) => {
       if (err) {
-        console.error(`[Wallbox-UDP] Error sending response:`, err);
+        log("error", "system", `[Wallbox-UDP] Error sending response:`, err instanceof Error ? err.message : String(err));
       } else {
-        console.log(`[Wallbox-UDP] Sent: ${responseStr.substring(0, 100)}${responseStr.length > 100 ? '...' : ''}`);
+        log("debug", "system", `[Wallbox-UDP] Sent: ${responseStr.substring(0, 100)}${responseStr.length > 100 ? '...' : ''}`);
       }
     });
   }
@@ -218,7 +219,7 @@ udpServer.on('message', (msg, rinfo) => {
 
 udpServer.on('listening', () => {
   const address = udpServer.address();
-  console.log(`✅ [Wallbox-UDP] KEBA Mock läuft auf ${address.address}:${address.port}`);
+  log("info", "system", `✅ [Wallbox-UDP] KEBA Mock läuft auf ${address.address}:${address.port}`);
 });
 
 // =============================================================================
@@ -274,12 +275,8 @@ const updateE3dcCache = async () => {
         ? parseGridChargePower(settings.e3dc.gridChargeEnableCommand)
         : 2500;
       
-      cachedE3dcData = await e3dcMockService.getLiveData(
-        wallboxPower, 
-        controlState?.batteryLock || false,
-        controlState?.gridCharging || false,
-        gridChargePower
-      );
+      // E3DC Mock liest Battery Lock und Grid Charging aus e3dc-control-state.json
+      cachedE3dcData = await e3dcMockService.getLiveData(wallboxPower);
       lastE3dcUpdate = Date.now();
       return cachedE3dcData;
     } finally {
@@ -360,18 +357,18 @@ const modbusVector = {
           
           callback(null, registerValue);
         } catch (err) {
-          console.error(`[E3DC-Modbus] Error getting register ${addr}:`, err);
+          log("error", "system", `[E3DC-Modbus] Error getting register ${addr}:`, err instanceof Error ? err.message : String(err));
           callback(err instanceof Error ? err : new Error(String(err)), 0);
         }
       })
       .catch(err => {
-        console.error(`[E3DC-Modbus] Cache update error for register ${addr}:`, err);
+        log("error", "system", `[E3DC-Modbus] Cache update error for register ${addr}:`, err instanceof Error ? err.message : String(err));
         callback(err instanceof Error ? err : new Error(String(err)), 0);
       });
   },
   
   setRegister: (addr: number, value: number, unitID: number) => {
-    console.log(`[E3DC-Modbus] Write not supported: Register ${addr} = ${value}`);
+    log("debug", "system", `[E3DC-Modbus] Write not supported: Register ${addr} = ${value}`);
     return;
   }
 };
@@ -387,16 +384,22 @@ let isRunning = false;
 
 export async function startUnifiedMock(): Promise<void> {
   if (isRunning) {
-    console.log('[Unified-Mock] Server läuft bereits');
+    log("info", "system", "[Unified-Mock] Server läuft bereits");
     return;
   }
   
-  console.log('\n╔════════════════════════════════════════════════════════════╗');
-  console.log('║      EnergyLink Unified Mock Server (Demo-Modus)          ║');
-  console.log('╚════════════════════════════════════════════════════════════╝\n');
+  log("info", "system", "\n╔════════════════════════════════════════════════════════════╗");
+  log("info", "system", "║      EnergyLink Unified Mock Server (Demo-Modus)          ║");
+  log("info", "system", "╚════════════════════════════════════════════════════════════╝\n");
 
   // Wallbox-Mock initialisieren (nur bei Start, nicht bei Import)
   wallboxMockService.initializeDemo();
+  
+  // Lade Settings und konfiguriere Mock-Wallbox-Phasen
+  const settings = await loadSettings();
+  const mockPhases = (settings?.mockWallboxPhases ?? 3) as 1 | 3;
+  wallboxMockService.setPhases(mockPhases);
+  log("debug", "system", `[Wallbox-Mock] Phasen-Konfiguration gesetzt: ${mockPhases}P`);
 
   // UDP Server starten
   await new Promise<void>((resolve, reject) => {
@@ -427,25 +430,25 @@ export async function startUnifiedMock(): Promise<void> {
 
   // Modbus Server Event-Handler
   modbusServer.on('socketError', (err: Error) => {
-    console.error('[E3DC-Modbus] Socket Error:', err.message);
+    log('error', 'system', '[E3DC-Modbus] Socket Error', err.message);
   });
 
   modbusServer.on('initialized', () => {
-    console.log(`✅ [E3DC-Modbus] E3DC S10 Mock läuft auf ${HOST}:${E3DC_MODBUS_PORT}`);
-    console.log(`   Register 40067-40083 (Holding Registers) verfügbar`);
+    log("info", "system", `✅ [E3DC-Modbus] E3DC S10 Mock läuft auf ${HOST}:${E3DC_MODBUS_PORT}`);
+    log("info", "system", `   Register 40067-40083 (Holding Registers) verfügbar`);
   });
 
-  console.log('\n📋 Demo-Modus Konfiguration:');
-  console.log('   1. Wallbox IP: 127.0.0.1 (UDP Port 7090)');
-  console.log('   2. E3DC IP: 127.0.0.1:5502 (Modbus TCP)');
-  console.log('   3. FHEM Base-URL: http://127.0.0.1:8083/fhem');
-  console.log('   4. Demo-Modus in Einstellungen aktivieren\n');
+  log("info", "system", "\n📋 Demo-Modus Konfiguration:");
+  log("info", "system", "   1. Wallbox IP: 127.0.0.1 (UDP Port 7090)");
+  log("info", "system", "   2. E3DC IP: 127.0.0.1:5502 (Modbus TCP)");
+  log("info", "system", "   3. FHEM Base-URL: http://127.0.0.1:8083/fhem");
+  log("info", "system", "   4. Demo-Modus in Einstellungen aktivieren\n");
 
-  console.log('🔄 State-Synchronisation aktiv:');
-  console.log('   - Wallbox-Leistung → E3DC Grid-Berechnung');
-  console.log('   - PV-Überschuss → Battery Charging/Discharging');
-  console.log('   - FHEM Device States (autoWallboxPV, etc.)');
-  console.log('   - Realistische Tageszeit-Simulation\n');
+  log("info", "system", "🔄 State-Synchronisation aktiv:");
+  log("info", "system", "   - Wallbox-Leistung → E3DC Grid-Berechnung");
+  log("info", "system", "   - PV-Überschuss → Battery Charging/Discharging");
+  log("info", "system", "   - FHEM Device States (autoWallboxPV, etc.)");
+  log("info", "system", "   - Realistische Tageszeit-Simulation\n");
   
   isRunning = true;
 }
@@ -455,18 +458,18 @@ export async function stopUnifiedMock(): Promise<void> {
     return;
   }
   
-  console.log('\n🛑 [Unified-Mock] Server wird heruntergefahren...');
+  log("info", "system", "\n🛑 [Unified-Mock] Server wird heruntergefahren...");
   
   const promises: Promise<void>[] = [
     new Promise<void>((resolve) => {
       udpServer.close(() => {
-        console.log('   ✅ Wallbox UDP Server gestoppt');
+        log("info", "system", "   ✅ Wallbox UDP Server gestoppt");
         resolve();
       });
     }),
     new Promise<void>((resolve) => {
       fhemServer.close(() => {
-        console.log('   ✅ FHEM HTTP Server gestoppt');
+        log("info", "system", "   ✅ FHEM HTTP Server gestoppt");
         resolve();
       });
     })
@@ -477,7 +480,7 @@ export async function stopUnifiedMock(): Promise<void> {
     promises.push(
       new Promise<void>((resolve) => {
         modbusServer.close(() => {
-          console.log('   ✅ E3DC Modbus Server gestoppt');
+          log("info", "system", "   ✅ E3DC Modbus Server gestoppt");
           modbusServer = null;
           resolve();
         });

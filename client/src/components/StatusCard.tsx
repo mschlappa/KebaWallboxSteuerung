@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, Settings } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -25,6 +25,7 @@ interface StatusCardProps {
   compact?: boolean;
   onClick?: () => void;
   statusIcons?: StatusIcon[];
+  showConfigIcon?: boolean;
 }
 
 export default function StatusCard({
@@ -38,6 +39,7 @@ export default function StatusCard({
   compact = false,
   onClick,
   statusIcons = [],
+  showConfigIcon = false,
 }: StatusCardProps) {
   const getStatusColor = () => {
     switch (status) {
@@ -69,7 +71,7 @@ export default function StatusCard({
 
   return (
     <Card 
-      className={`p-6 ${onClick ? 'cursor-pointer hover-elevate active-elevate-2' : ''}`}
+      className={`p-6 relative ${onClick ? 'cursor-pointer hover-elevate active-elevate-2' : ''}`}
       data-testid={`card-${title.toLowerCase().replace(/\s/g, '-')}`}
       onClick={onClick}
     >
@@ -85,12 +87,13 @@ export default function StatusCard({
                 <div className="flex items-center gap-1.5 ml-1">
                   {statusIcons.map((statusIcon, index) => {
                     const StatusIconComponent = statusIcon.icon;
+                    const iconColor = statusIcon.color || 'text-muted-foreground';
                     return (
                       <Tooltip key={index}>
                         <TooltipTrigger asChild>
                           <div>
                             <StatusIconComponent 
-                              className={`w-4 h-4 ${statusIcon.color || 'text-muted-foreground'}`}
+                              className={`w-4 h-4 ${iconColor}`}
                               data-testid={`icon-${statusIcon.label.toLowerCase().replace(/\s/g, '-')}`}
                             />
                           </div>
@@ -105,22 +108,20 @@ export default function StatusCard({
               </TooltipProvider>
             )}
           </div>
-          <div className="flex items-baseline gap-2 justify-between">
-            <div className="flex items-baseline gap-2">
-              <span
-                className={`${compact ? 'text-xl' : 'text-3xl'} font-bold ${getStatusColor()}`}
-                data-testid={`value-${title.toLowerCase().replace(/\s/g, '-')}`}
-              >
-                {value}
+          <div className="flex items-baseline gap-2">
+            <span
+              className={`${compact ? 'text-xl' : 'text-3xl'} font-bold ${getStatusColor()}`}
+              data-testid={`value-${title.toLowerCase().replace(/\s/g, '-')}`}
+            >
+              {value}
+            </span>
+            {unit && (
+              <span className="text-xl font-medium text-muted-foreground">
+                {unit}
               </span>
-              {unit && (
-                <span className="text-xl font-medium text-muted-foreground">
-                  {unit}
-                </span>
-              )}
-            </div>
+            )}
             {additionalInfo && (
-              <span className="text-sm text-muted-foreground text-right whitespace-nowrap" data-testid="text-additional-info">
+              <span className="text-sm text-muted-foreground whitespace-nowrap" data-testid="text-additional-info">
                 {additionalInfo}
               </span>
             )}
@@ -132,6 +133,23 @@ export default function StatusCard({
           </Badge>
         )}
       </div>
+      {showConfigIcon && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="absolute bottom-3 right-3">
+                <Settings 
+                  className="w-4 h-4 text-muted-foreground" 
+                  data-testid="icon-config-indicator"
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Konfiguration verfügbar</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
     </Card>
   );
 }

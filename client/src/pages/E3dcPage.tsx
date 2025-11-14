@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Battery, Home as HomeIcon, Sun, Grid3x3, TrendingUp, TrendingDown, AlertCircle, PlugZap, ShieldOff, Zap, Clock } from "lucide-react";
+import { Battery, Home as HomeIcon, Sun, Grid3x3, TrendingUp, TrendingDown, AlertCircle, PlugZap, ShieldOff, Zap, Clock, Settings as SettingsIcon } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { E3dcLiveData, Settings, ControlState } from "@shared/schema";
 import { Link } from "wouter";
@@ -18,6 +18,12 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -246,7 +252,7 @@ export default function E3dcPage() {
             <div className="grid grid-cols-2 gap-3">
               {/* Hausbatterie SOC */}
               <Card 
-                className={`p-6 ${isE3dcEnabled ? 'cursor-pointer hover-elevate active-elevate-2' : ''}`}
+                className={`p-6 relative ${isE3dcEnabled ? 'cursor-pointer hover-elevate active-elevate-2' : ''}`}
                 onClick={() => isE3dcEnabled && setShowBatteryDrawer(true)}
                 data-testid="card-battery-soc"
               >
@@ -276,11 +282,28 @@ export default function E3dcPage() {
                     </div>
                   </div>
                 ) : null}
+                {isE3dcEnabled && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="absolute bottom-3 right-3">
+                          <SettingsIcon 
+                            className="w-4 h-4 text-muted-foreground" 
+                            data-testid="icon-config-indicator-soc"
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Konfiguration verfügbar</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </Card>
 
               {/* Hausbatterie Leistung */}
               <Card 
-                className={`p-6 ${isE3dcEnabled ? 'cursor-pointer hover-elevate active-elevate-2' : ''}`}
+                className={`p-6 relative ${isE3dcEnabled ? 'cursor-pointer hover-elevate active-elevate-2' : ''}`}
                 onClick={() => isE3dcEnabled && setShowBatteryDrawer(true)}
                 data-testid="card-battery-power"
               >
@@ -314,6 +337,23 @@ export default function E3dcPage() {
                     </div>
                   </div>
                 ) : null}
+                {isE3dcEnabled && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="absolute bottom-3 right-3">
+                          <SettingsIcon 
+                            className="w-4 h-4 text-muted-foreground" 
+                            data-testid="icon-config-indicator-power"
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Konfiguration verfügbar</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </Card>
             </div>
 

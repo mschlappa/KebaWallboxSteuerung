@@ -37,6 +37,29 @@ export const e3dcConfigSchema = z.object({
 
 export type E3dcConfig = z.infer<typeof e3dcConfigSchema>;
 
+export const chargingStrategySchema = z.enum([
+  "off",
+  "surplus_battery_prio",
+  "surplus_vehicle_prio",
+  "max_with_battery",
+  "max_without_battery",
+]);
+
+export type ChargingStrategy = z.infer<typeof chargingStrategySchema>;
+
+export const chargingStrategyConfigSchema = z.object({
+  activeStrategy: chargingStrategySchema,
+  minStartPowerWatt: z.number().min(500).max(5000),
+  stopThresholdWatt: z.number().min(300).max(3000),
+  startDelaySeconds: z.number().min(30).max(600),
+  stopDelaySeconds: z.number().min(60).max(900),
+  physicalPhaseSwitch: z.union([z.literal(1), z.literal(3)]).default(3),  // Physischer Schalter: 1P oder 3P
+  minCurrentChangeAmpere: z.number().min(0.1).max(5),
+  minChangeIntervalSeconds: z.number().min(10).max(300),
+});
+
+export type ChargingStrategyConfig = z.infer<typeof chargingStrategyConfigSchema>;
+
 export const settingsSchema = z.object({
   wallboxIp: z.string(),
   wallboxIpBackup: z.string().optional(),
@@ -48,7 +71,11 @@ export const settingsSchema = z.object({
   pvSurplusOffUrlBackup: z.string().optional(),
   nightChargingSchedule: nightChargingScheduleSchema.optional(),
   e3dc: e3dcConfigSchema.optional(),
+  chargingStrategy: chargingStrategyConfigSchema.optional(),
   demoMode: z.boolean().optional(),
+  mockWallboxPhases: z.union([z.literal(1), z.literal(3)]).optional().default(3),
+  mockTimeEnabled: z.boolean().optional(), // Mock-Zeit aktiviert/deaktiviert
+  mockDateTime: z.string().optional(), // Format "YYYY-MM-DDTHH:MM" für Demo-Modus Datum+Zeit-Simulation (Jahreszeit → PV-Leistung)
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
@@ -112,3 +139,18 @@ export const e3dcLiveDataSchema = z.object({
 });
 
 export type E3dcLiveData = z.infer<typeof e3dcLiveDataSchema>;
+
+export const chargingContextSchema = z.object({
+  strategy: chargingStrategySchema,
+  isActive: z.boolean(),
+  currentAmpere: z.number(),
+  targetAmpere: z.number(),
+  currentPhases: z.number(),
+  lastAdjustment: z.string().optional(),
+  startDelayTrackerSince: z.string().optional(),
+  belowThresholdSince: z.string().optional(),
+  adjustmentCount: z.number(),
+  calculatedSurplus: z.number().optional(),
+});
+
+export type ChargingContext = z.infer<typeof chargingContextSchema>;

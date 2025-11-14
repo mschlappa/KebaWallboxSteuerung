@@ -96,18 +96,22 @@ export class WallboxMockService {
     const phaseVoltage = 230000; // 230V in mV
     let i1 = 0, i2 = 0, i3 = 0;
     
-    if (this.phases === 1) {
-      // Einphasige Ladung: Nur Phase 1 hat Strom
-      i1 = Math.round(this.currentSetpoint); // Sollstrom in mA
-      i2 = 0;
-      i3 = 0;
-    } else {
-      // Dreiphasige Ladung: Strom gleichmäßig verteilt
-      const phaseCurrent = this.currentSetpoint; // Sollstrom pro Phase in mA
-      i1 = Math.round(phaseCurrent);
-      i2 = Math.round(phaseCurrent);
-      i3 = Math.round(phaseCurrent);
+    // Ströme nur anzeigen wenn Wallbox tatsächlich lädt (State 3 = Charging)
+    if (this.state === 3 && this.enabled) {
+      if (this.phases === 1) {
+        // Einphasige Ladung: Nur Phase 1 hat Strom
+        i1 = Math.round(this.currentSetpoint); // Sollstrom in mA
+        i2 = 0;
+        i3 = 0;
+      } else {
+        // Dreiphasige Ladung: Strom gleichmäßig verteilt
+        const phaseCurrent = this.currentSetpoint; // Sollstrom pro Phase in mA
+        i1 = Math.round(phaseCurrent);
+        i2 = Math.round(phaseCurrent);
+        i3 = Math.round(phaseCurrent);
+      }
     }
+    // Wenn nicht am Laden: Alle Ströme bleiben 0
     
     return {
       "ID": "3",
@@ -184,11 +188,43 @@ export class WallboxMockService {
     if (cmd === "curr") {
       // Stromstärke setzen (in mA)
       const newCurrent = parseInt(value);
-      if (newCurrent >= 6000 && newCurrent <= this.maxCurrent) {
-        this.currentSetpoint = newCurrent;
+      // KEBA P30 unterstützt 6-32A (6000-32000 mA)
+      // 3-phasig: max 16A, 1-phasig: max 32A
+      if (newCurrent >= 6000 && newCurrent <= 32000) {
+        // Stromstärke auf max für aktuelle Phasenzahl begrenzen
+        const maxForPhases = this.phases === 1 ? 32000 : 16000;
+        this.currentSetpoint = Math.min(newCurrent, maxForPhases);
+        
         if (this.state === 3) { // Wenn gerade lädt
           this.calculateChargingPower();
         }
+        return { "TCH-OK": "done" };
+      }
+    }
+
+    if (cmd === "phases") {
+      // Phasenzahl manuell setzen (1 oder 3)
+      const newPhases = parseInt(value);
+      if (newPhases === 1 || newPhases === 3) {
+        this.phases = newPhases;
+        
+        // Maximalstrom anpassen
+        if (newPhases === 1) {
+          this.maxCurrent = 32000; // 1P: max 32A
+        } else {
+          this.maxCurrent = 16000; // 3P: max 16A
+        }
+        
+        // Stromstärke ggf. begrenzen
+        if (this.currentSetpoint > this.maxCurrent) {
+          this.currentSetpoint = this.maxCurrent;
+        }
+        
+        // Leistung neu berechnen wenn gerade lädt
+        if (this.state === 3) {
+          this.calculateChargingPower();
+        }
+        
         return { "TCH-OK": "done" };
       }
     }
@@ -339,6 +375,26 @@ export class WallboxMockService {
       // Normal: Dreiphasige Ladung (6-16A)
       this.phases = 3;
       this.maxCurrent = 16000; // 16A
+    }
+    
+    // Wenn gerade geladen wird, Leistung neu berechnen
+    if (this.state === 3) {
+      this.calculateChargingPower();
+    }
+  }
+
+  /**
+   * Setzt die Phasen-Konfiguration der Mock-Wallbox (Demo-Modus)
+   * Simuliert den physischen Phasen-Umschalter
+   */
+  setPhases(phases: 1 | 3): void {
+    this.phases = phases;
+    
+    // Max Current anpassen
+    if (phases === 1) {
+      this.maxCurrent = 32000; // 32A einphasig
+    } else {
+      this.maxCurrent = 16000; // 16A dreiphasig
     }
     
     // Wenn gerade geladen wird, Leistung neu berechnen

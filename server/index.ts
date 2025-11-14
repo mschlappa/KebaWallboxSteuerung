@@ -1,8 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic, log as viteLog } from "./vite";
 import { storage } from "./storage";
 import { startUnifiedMock, stopUnifiedMock } from "./unified-mock";
+import { log } from "./logger";
 
 const app = express();
 
@@ -44,7 +45,7 @@ app.use((req, res, next) => {
           logLine = logLine.slice(0, 79) + "…";
         }
 
-        log(logLine);
+        viteLog(logLine);
       }
     }
   });
@@ -59,10 +60,10 @@ app.use((req, res, next) => {
   if (shouldStartMock) {
     try {
       await startUnifiedMock();
-      console.log('[Server] ✅ Unified Mock Server automatisch gestartet (Demo-Modus)');
+      log('info', 'system', '✅ Unified Mock Server automatisch gestartet (Demo-Modus)');
     } catch (error) {
-      console.error('[Server] ⚠️ Fehler beim Starten des Mock-Servers:', error);
-      console.error('[Server] Fortsetzung ohne Mock-Server...');
+      log('error', 'system', '⚠️ Fehler beim Starten des Mock-Servers', error instanceof Error ? error.message : String(error));
+      log('warning', 'system', 'Fortsetzung ohne Mock-Server...');
     }
   }
   
@@ -95,16 +96,16 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    viteLog(`serving on port ${port}`);
   });
   
   // Graceful Shutdown für Mock-Server (falls aktiv)
   const shutdown = async () => {
-    console.log('\n🛑 [Server] Graceful Shutdown wird durchgeführt...');
+    log('info', 'system', '🛑 Graceful Shutdown wird durchgeführt...');
     try {
       await stopUnifiedMock();
     } catch (error) {
-      console.error('[Server] Fehler beim Stoppen des Mock-Servers:', error);
+      log('error', 'system', 'Fehler beim Stoppen des Mock-Servers', error instanceof Error ? error.message : String(error));
     }
     process.exit(0);
   };

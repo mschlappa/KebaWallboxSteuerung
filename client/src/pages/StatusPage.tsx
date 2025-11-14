@@ -1,16 +1,17 @@
 import { useEffect, useState, useRef } from "react";
-import { Battery, Plug, Zap, AlertCircle, Gauge, Sun, Moon, ShieldOff, PlugZap, Clock, Check, X } from "lucide-react";
+import { Battery, Plug, Zap, AlertCircle, Gauge, Sun, Moon, ShieldOff, PlugZap, Clock, Check, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StatusCard from "@/components/StatusCard";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { WallboxStatus, ControlState, Settings, PlugStatusTracking } from "@shared/schema";
+import type { WallboxStatus, ControlState, Settings, PlugStatusTracking, ChargingContext, ChargingStrategy } from "@shared/schema";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,6 +26,15 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow, format } from "date-fns";
 import { de } from "date-fns/locale";
+
+// Strategy Label Mapping
+const STRATEGY_OPTIONS: Array<{ value: ChargingStrategy; label: string; description: string }> = [
+  { value: "off", label: "Aus", description: "Keine automatische Ladung" },
+  { value: "surplus_battery_prio", label: "Überschuss (Batterie priorisiert)", description: "Nur Netzeinspeisung nutzen" },
+  { value: "surplus_vehicle_prio", label: "Überschuss (Fahrzeug priorisiert)", description: "Mit Batterie-Entladung" },
+  { value: "max_with_battery", label: "Max Power (mit Batterieentladung)", description: "Volle Leistung inkl. Batterie" },
+  { value: "max_without_battery", label: "Max Power (ohne Batterieentladung)", description: "Volle Leistung ohne Batterie" },
+];
 
 export default function StatusPage() {
   const { toast } = useToast();
@@ -58,6 +68,11 @@ export default function StatusPage() {
 
   const { data: plugTracking } = useQuery<PlugStatusTracking>({
     queryKey: ["/api/wallbox/plug-tracking"],
+    refetchInterval: 5000, // Synchron mit Status-Updates
+  });
+
+  const { data: chargingContext } = useQuery<ChargingContext>({
+    queryKey: ["/api/charging/context"],
     refetchInterval: 5000, // Synchron mit Status-Updates
   });
 
@@ -149,9 +164,11 @@ export default function StatusPage() {
       apiRequest("POST", "/api/settings", newSettings),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/controls"] });
     },
     onError: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/controls"] });
     },
   });
 
@@ -211,6 +228,31 @@ export default function StatusPage() {
     };
     
     updateSettingsMutation.mutate(updatedSettings);
+  };
+
+  const handleStrategyChange = (strategy: ChargingStrategy) => {
+    if (!settings) return;
+    
+    const updatedSettings: Settings = {
+      ...settings,
+      chargingStrategy: {
+        minStartPowerWatt: settings.chargingStrategy?.minStartPowerWatt ?? 1400,
+        stopThresholdWatt: settings.chargingStrategy?.stopThresholdWatt ?? 1000,
+        startDelaySeconds: settings.chargingStrategy?.startDelaySeconds ?? 120,
+        stopDelaySeconds: settings.chargingStrategy?.stopDelaySeconds ?? 300,
+        physicalPhaseSwitch: settings.chargingStrategy?.physicalPhaseSwitch ?? 3,
+        minCurrentChangeAmpere: settings.chargingStrategy?.minCurrentChangeAmpere ?? 1,
+        minChangeIntervalSeconds: settings.chargingStrategy?.minChangeIntervalSeconds ?? 60,
+        activeStrategy: strategy,
+      },
+    };
+    
+    updateSettingsMutation.mutate(updatedSettings);
+    
+    toast({
+      title: "Strategie geändert",
+      description: STRATEGY_OPTIONS.find(s => s.value === strategy)?.label || strategy,
+    });
   };
 
   const handlePvSurplusToggle = (enabled: boolean) => {
@@ -299,16 +341,23 @@ export default function StatusPage() {
   const energy = energySession;
   const phases = status?.phases || 0;
 
+  const getStrategyLabel = (strategy: string | undefined) => {
+    const option = STRATEGY_OPTIONS.find(opt => opt.value === strategy);
+    return option?.label || "Aus";
+  };
+
   const getStatusIcons = () => {
     const icons = [];
     
-    if (controlState?.pvSurplus) {
+    // Strategie-Icon (wenn aktiv)
+    if (chargingContext?.isActive && chargingContext.strategy !== "off") {
       icons.push({
-        icon: Sun,
-        label: "PV Überschussladung aktiv",
+        icon: Sparkles,
+        label: `Strategie: ${getStrategyLabel(chargingContext.strategy)}`,
         color: "text-muted-foreground"
       });
     }
+    
     if (settings?.nightChargingSchedule?.enabled) {
       icons.push({
         icon: Clock,
@@ -398,6 +447,17 @@ export default function StatusPage() {
     return () => clearInterval(interval);
   }, [status?.lastUpdated]);
 
+  if (isLoading && !status) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <div className="text-center space-y-4">
+          <Zap className="w-12 h-12 text-primary mx-auto animate-pulse" />
+          <p className="text-muted-foreground">Lade Wallbox-Status...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto pb-24 pt-6">
@@ -434,6 +494,7 @@ export default function StatusPage() {
               additionalInfo={getPhaseInfo()}
               statusIcons={getStatusIcons()}
               onClick={() => setShowChargingControlDrawer(true)}
+              showConfigIcon={true}
             />
 
             <Card data-testid="card-current-control">
@@ -521,6 +582,38 @@ export default function StatusPage() {
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-4 space-y-4">
+            {/* Ladestrategie */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500/10 dark:bg-yellow-400/10">
+                  <Sparkles className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Ladestrategie</p>
+                </div>
+              </div>
+              <div className="pl-[52px]" data-testid="section-charging-strategy">
+                <Select
+                  value={settings?.chargingStrategy?.activeStrategy || "off"}
+                  onValueChange={(value) => handleStrategyChange(value as ChargingStrategy)}
+                  disabled={!settings || updateSettingsMutation.isPending}
+                >
+                  <SelectTrigger className="[&>span]:line-clamp-none" data-testid="select-strategy-desktop">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STRATEGY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value} data-testid={`option-strategy-${option.value}`}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Separator />
+
             {/* Zeitgesteuerte Ladung */}
             <div className="space-y-2">
               <div className="flex items-center justify-between" data-testid="section-night-charging">
@@ -548,38 +641,6 @@ export default function StatusPage() {
                     <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="status-night-charging-disabled">
                       <X className="w-5 h-5" />
                       <span className="text-sm font-medium">Aus</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* PV Überschussladung */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between" data-testid="section-pv-surplus">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500/10 dark:bg-yellow-400/10">
-                    <Sun className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />
-                  </div>
-                  <div>
-                    <p className="font-medium">PV-Überschussladung</p>
-                    <p className="text-sm text-muted-foreground">
-                      Das Auto wird nur mit Solarstrom geladen
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  {controlState?.pvSurplus ? (
-                    <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400" data-testid="status-pv-surplus-enabled">
-                      <Check className="w-5 h-5" />
-                      <span className="text-sm font-medium">Aktiv</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="status-pv-surplus-disabled">
-                      <X className="w-5 h-5" />
-                      <span className="text-sm font-medium">Inaktiv</span>
                     </div>
                   )}
                 </div>
@@ -707,12 +768,85 @@ export default function StatusPage() {
         <DrawerContent data-testid="drawer-charging-control">
           <div className="mx-auto w-full max-w-sm">
             <DrawerHeader>
-              <DrawerTitle>SmartHome-Steuerung</DrawerTitle>
-              <DrawerDescription>
-                Automatische Ladesteuerung konfigurieren
-              </DrawerDescription>
+              <DrawerTitle>Fahrzeugladung konfigurieren</DrawerTitle>
             </DrawerHeader>
             <div className="p-4 space-y-4">
+              {/* Ladestrategie */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">Ladestrategie</Label>
+                </div>
+                <Select
+                  value={settings?.chargingStrategy?.activeStrategy || "off"}
+                  onValueChange={(value) => handleStrategyChange(value as ChargingStrategy)}
+                  disabled={!settings || updateSettingsMutation.isPending}
+                >
+                  <SelectTrigger className="[&>span]:line-clamp-none" data-testid="select-strategy-drawer">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STRATEGY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value} data-testid={`option-strategy-drawer-${option.value}`}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Ladesteuerung Status */}
+              {chargingContext?.isActive && (
+                <>
+                  <Separator />
+                  
+                  <div className="space-y-3" data-testid="section-charging-strategy">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">Aktive Ladestrategie</p>
+                        <p className="text-sm font-medium" data-testid="text-strategy-name">
+                          {getStrategyLabel(chargingContext.strategy)}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">Ladestrom</p>
+                        <p className="text-sm font-medium" data-testid="text-strategy-current">
+                          {chargingContext.currentAmpere ?? "–"}A → {chargingContext.targetAmpere ?? "–"}A
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">Phasen</p>
+                        <p className="text-sm font-medium" data-testid="text-strategy-phases">
+                          {chargingContext.currentPhases === 3 ? "3-phasig" : chargingContext.currentPhases === 1 ? "1-phasig" : "Unbekannt"}
+                        </p>
+                      </div>
+                      
+                      {chargingContext.strategy !== "off" && chargingContext.calculatedSurplus !== undefined && (
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-muted-foreground">PV-Überschuss</p>
+                          <p className="text-sm font-medium" data-testid="text-strategy-surplus">
+                            {chargingContext.calculatedSurplus >= 0 ? "+" : ""}{(chargingContext.calculatedSurplus / 1000).toFixed(2)} kW
+                          </p>
+                        </div>
+                      )}
+                      
+                      {chargingContext.strategy !== "off" && chargingContext.lastAdjustment && (
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-muted-foreground">Letzte Anpassung</p>
+                          <p className="text-sm font-medium" data-testid="text-strategy-last-adjustment">
+                            {formatRelativeTime(chargingContext.lastAdjustment)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <Separator />
+
               {/* Zeitgesteuerte Ladung */}
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-0.5 flex-1">
@@ -723,7 +857,7 @@ export default function StatusPage() {
                     </Label>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Lädt das Fahrzeug automatisch im definierten Zeitfenster
+                    Lädt das Fahrzeug automatisch im hier angegebenen Zeitfenster
                   </p>
                 </div>
                 <Switch
@@ -765,30 +899,6 @@ export default function StatusPage() {
                   </div>
                 </div>
               )}
-
-              <Separator />
-
-              {/* PV Überschussladung */}
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <Sun className="w-4 h-4 text-muted-foreground" />
-                    <Label htmlFor="pv-surplus-drawer" className="text-sm font-medium">
-                      PV Überschussladung
-                    </Label>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Automatisches Laden bei Solarstrom-Überschuss
-                  </p>
-                </div>
-                <Switch
-                  id="pv-surplus-drawer"
-                  checked={controlState?.pvSurplus || false}
-                  onCheckedChange={handlePvSurplusToggle}
-                  disabled={!controlState || updateControlsMutation.isPending}
-                  data-testid="switch-pv-surplus"
-                />
-              </div>
             </div>
             <DrawerFooter>
               <DrawerClose asChild>

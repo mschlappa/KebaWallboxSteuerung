@@ -2,21 +2,6 @@ import type { Settings, ControlState, LogEntry, LogSettings, LogLevel, PlugStatu
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 
-// Simple logger for storage operations (avoids circular dependency with logger.ts)
-// Uses identical timestamp formatting as logger.ts to ensure consistency
-function logStorage(level: "debug" | "info" | "warning", message: string, details?: string): void {
-  const now = new Date();
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
-  const timestamp = `${hours}:${minutes}:${seconds},${milliseconds}`;
-  
-  const levelUpper = level.toUpperCase() as 'DEBUG' | 'INFO' | 'WARNING';
-  const fullMessage = details ? `${message} - ${details}` : message;
-  console.log(`[${timestamp}] [${levelUpper}] [storage] ${fullMessage}`);
-}
-
 export interface IStorage {
   getSettings(): Settings | null;
   saveSettings(settings: Settings): void;
@@ -59,7 +44,7 @@ export class MemStorage implements IStorage {
   };
   private logs: LogEntry[] = [];
   private logSettings: LogSettings = {
-    level: "debug" as LogLevel,
+    level: "info" as LogLevel,
   };
   private maxLogs = 1000;
 
@@ -88,10 +73,10 @@ export class MemStorage implements IStorage {
       try {
         const data = readFileSync(this.settingsFilePath, "utf-8");
         const loaded = JSON.parse(data);
-        logStorage("debug", `Einstellungen geladen aus: ${this.settingsFilePath}`);
+        console.log("[Storage] Einstellungen geladen aus:", this.settingsFilePath);
         return loaded;
       } catch (error) {
-        logStorage("warning", "Fehler beim Laden der Einstellungen", error instanceof Error ? error.message : String(error));
+        console.error("[Storage] Fehler beim Laden der Einstellungen:", error);
       }
     }
 
@@ -115,9 +100,9 @@ export class MemStorage implements IStorage {
   private saveSettingsToFile(settings: Settings): void {
     try {
       writeFileSync(this.settingsFilePath, JSON.stringify(settings, null, 2), "utf-8");
-      logStorage("debug", `Einstellungen gespeichert in: ${this.settingsFilePath}`);
+      console.log("[Storage] Einstellungen gespeichert in:", this.settingsFilePath);
     } catch (error) {
-      logStorage("warning", "Fehler beim Speichern der Einstellungen", error instanceof Error ? error.message : String(error));
+      console.error("[Storage] Fehler beim Speichern der Einstellungen:", error);
     }
   }
 
@@ -126,7 +111,7 @@ export class MemStorage implements IStorage {
       try {
         const data = readFileSync(this.controlStateFilePath, "utf-8");
         const loaded = JSON.parse(data);
-        logStorage("debug", `Control State geladen aus: ${this.controlStateFilePath}`);
+        console.log("[Storage] Control State geladen aus:", this.controlStateFilePath);
         
         // Stelle sicher, dass alle Felder vorhanden sind (Backward Compatibility)
         return {
@@ -137,7 +122,7 @@ export class MemStorage implements IStorage {
           ...loaded,
         };
       } catch (error) {
-        logStorage("warning", "Fehler beim Laden des Control States", error instanceof Error ? error.message : String(error));
+        console.error("[Storage] Fehler beim Laden des Control States:", error);
       }
     }
 
@@ -153,9 +138,9 @@ export class MemStorage implements IStorage {
   private saveControlStateToFile(state: ControlState): void {
     try {
       writeFileSync(this.controlStateFilePath, JSON.stringify(state, null, 2), "utf-8");
-      logStorage("debug", `Control State gespeichert in: ${this.controlStateFilePath}`);
+      console.log("[Storage] Control State gespeichert in:", this.controlStateFilePath);
     } catch (error) {
-      logStorage("warning", "Fehler beim Speichern des Control States", error instanceof Error ? error.message : String(error));
+      console.error("[Storage] Fehler beim Speichern des Control States:", error);
     }
   }
 
@@ -164,10 +149,10 @@ export class MemStorage implements IStorage {
       try {
         const data = readFileSync(this.plugTrackingFilePath, "utf-8");
         const loaded = JSON.parse(data);
-        logStorage("debug", `Plug Tracking geladen aus: ${this.plugTrackingFilePath}`);
+        console.log("[Storage] Plug Tracking geladen aus:", this.plugTrackingFilePath);
         return loaded;
       } catch (error) {
-        logStorage("warning", "Fehler beim Laden des Plug Trackings", error instanceof Error ? error.message : String(error));
+        console.error("[Storage] Fehler beim Laden des Plug Trackings:", error);
       }
     }
     
@@ -178,9 +163,9 @@ export class MemStorage implements IStorage {
   private savePlugTrackingToFile(tracking: PlugStatusTracking): void {
     try {
       writeFileSync(this.plugTrackingFilePath, JSON.stringify(tracking, null, 2), "utf-8");
-      logStorage("debug", `Plug Tracking gespeichert in: ${this.plugTrackingFilePath}`);
+      console.log("[Storage] Plug Tracking gespeichert in:", this.plugTrackingFilePath);
     } catch (error) {
-      logStorage("warning", "Fehler beim Speichern des Plug Trackings", error instanceof Error ? error.message : String(error));
+      console.error("[Storage] Fehler beim Speichern des Plug Trackings:", error);
     }
   }
 
@@ -189,7 +174,7 @@ export class MemStorage implements IStorage {
       try {
         const data = readFileSync(this.chargingContextFilePath, "utf-8");
         const loaded = JSON.parse(data);
-        logStorage("debug", `Charging Context geladen aus: ${this.chargingContextFilePath}`);
+        console.log("[Storage] Charging Context geladen aus:", this.chargingContextFilePath);
         
         return {
           strategy: "off",
@@ -202,7 +187,7 @@ export class MemStorage implements IStorage {
           ...loaded,
         };
       } catch (error) {
-        logStorage("warning", "Fehler beim Laden des Charging Context", error instanceof Error ? error.message : String(error));
+        console.error("[Storage] Fehler beim Laden des Charging Context:", error);
       }
     }
     
@@ -220,9 +205,9 @@ export class MemStorage implements IStorage {
   private saveChargingContextToFile(context: ChargingContext): void {
     try {
       writeFileSync(this.chargingContextFilePath, JSON.stringify(context, null, 2), "utf-8");
-      logStorage("debug", `Charging Context gespeichert in: ${this.chargingContextFilePath}`);
+      console.log("[Storage] Charging Context gespeichert in:", this.chargingContextFilePath);
     } catch (error) {
-      logStorage("warning", "Fehler beim Speichern des Charging Context", error instanceof Error ? error.message : String(error));
+      console.error("[Storage] Fehler beim Speichern des Charging Context:", error);
     }
   }
 
@@ -240,12 +225,12 @@ export class MemStorage implements IStorage {
       // Wallbox IP Backup
       settings.wallboxIpBackup = settings.wallboxIp;
       settings.wallboxIp = "127.0.0.1";
-      logStorage("debug", `Demo-Modus aktiviert - Wallbox Backup: ${settings.wallboxIpBackup} → 127.0.0.1`);
+      console.log(`[Storage] Demo-Modus aktiviert - Wallbox Backup: ${settings.wallboxIpBackup} → 127.0.0.1`);
       
       // E3DC IP: IMMER auf Mock setzen, Backup nur wenn vorher konfiguriert
       if (settings.e3dcIp) {
         settings.e3dcIpBackup = settings.e3dcIp;
-        logStorage("debug", `Demo-Modus aktiviert - E3DC Backup: ${settings.e3dcIpBackup} → 127.0.0.1:5502`);
+        console.log(`[Storage] Demo-Modus aktiviert - E3DC Backup: ${settings.e3dcIpBackup} → 127.0.0.1:5502`);
       }
       settings.e3dcIp = "127.0.0.1:5502";
       
@@ -253,12 +238,12 @@ export class MemStorage implements IStorage {
       if (settings.pvSurplusOnUrl) {
         settings.pvSurplusOnUrlBackup = settings.pvSurplusOnUrl;
         settings.pvSurplusOnUrl = "http://127.0.0.1:8083/fhem?cmd.autoWallboxPV=on";
-        logStorage("debug", "Demo-Modus aktiviert - FHEM ON URL → Mock-Server");
+        console.log(`[Storage] Demo-Modus aktiviert - FHEM ON URL → Mock-Server`);
       }
       if (settings.pvSurplusOffUrl) {
         settings.pvSurplusOffUrlBackup = settings.pvSurplusOffUrl;
         settings.pvSurplusOffUrl = "http://127.0.0.1:8083/fhem?cmd.autoWallboxPV=off";
-        logStorage("debug", "Demo-Modus aktiviert - FHEM OFF URL → Mock-Server");
+        console.log(`[Storage] Demo-Modus aktiviert - FHEM OFF URL → Mock-Server`);
       }
     }
     // Demo-Modus deaktiviert: IPs aus previousSettings-Backup wiederherstellen
@@ -266,12 +251,12 @@ export class MemStorage implements IStorage {
       // Wallbox IP wiederherstellen
       if (previousSettings?.wallboxIpBackup) {
         settings.wallboxIp = previousSettings.wallboxIpBackup;
-        logStorage("debug", `Demo-Modus deaktiviert - Wallbox wiederhergestellt: ${settings.wallboxIp}`);
+        console.log(`[Storage] Demo-Modus deaktiviert - Wallbox wiederhergestellt: ${settings.wallboxIp}`);
       } else {
         // Migration/Edge Case: Kein Backup vorhanden
         if (settings.wallboxIp === "127.0.0.1") {
           settings.wallboxIp = "192.168.40.16";
-          logStorage("warning", `Demo-Modus deaktiviert ohne Backup - Wallbox Fallback auf Default-IP: ${settings.wallboxIp}`);
+          console.warn(`[Storage] Demo-Modus deaktiviert ohne Backup - Wallbox Fallback auf Default-IP: ${settings.wallboxIp}`);
         }
       }
       delete settings.wallboxIpBackup;
@@ -279,24 +264,24 @@ export class MemStorage implements IStorage {
       // E3DC IP wiederherstellen (nur wenn Backup existiert)
       if (previousSettings?.e3dcIpBackup) {
         settings.e3dcIp = previousSettings.e3dcIpBackup;
-        logStorage("debug", `Demo-Modus deaktiviert - E3DC wiederhergestellt: ${settings.e3dcIp}`);
+        console.log(`[Storage] Demo-Modus deaktiviert - E3DC wiederhergestellt: ${settings.e3dcIp}`);
         delete settings.e3dcIpBackup;
       } else if (settings.e3dcIp === "127.0.0.1:5502") {
         // Falls E3DC auf Mock-IP war aber kein Backup existiert, setze auf undefined
         delete settings.e3dcIp;
-        logStorage("warning", "Demo-Modus deaktiviert ohne E3DC Backup - E3DC IP entfernt");
+        console.warn(`[Storage] Demo-Modus deaktiviert ohne E3DC Backup - E3DC IP entfernt`);
       }
       
       // FHEM URLs wiederherstellen
       if (previousSettings?.pvSurplusOnUrlBackup) {
         settings.pvSurplusOnUrl = previousSettings.pvSurplusOnUrlBackup;
-        logStorage("debug", "Demo-Modus deaktiviert - FHEM ON URL wiederhergestellt");
+        console.log(`[Storage] Demo-Modus deaktiviert - FHEM ON URL wiederhergestellt`);
       }
       delete settings.pvSurplusOnUrlBackup;
       
       if (previousSettings?.pvSurplusOffUrlBackup) {
         settings.pvSurplusOffUrl = previousSettings.pvSurplusOffUrlBackup;
-        logStorage("debug", "Demo-Modus deaktiviert - FHEM OFF URL wiederhergestellt");
+        console.log(`[Storage] Demo-Modus deaktiviert - FHEM OFF URL wiederhergestellt`);
       }
       delete settings.pvSurplusOffUrlBackup;
     }
@@ -313,7 +298,7 @@ export class MemStorage implements IStorage {
         // User hat echte IP eingetragen während Demo aktiv - backup erstellen
         settings.e3dcIpBackup = settings.e3dcIp;
         settings.e3dcIp = "127.0.0.1:5502";
-        logStorage("debug", `Demo-Modus aktiv - Neue E3DC IP gesichert: ${settings.e3dcIpBackup} → 127.0.0.1:5502`);
+        console.log(`[Storage] Demo-Modus aktiv - Neue E3DC IP gesichert: ${settings.e3dcIpBackup} → 127.0.0.1:5502`);
       } else if (settings.e3dcIp === "127.0.0.1:5502") {
         // E3DC Mock-IP bleibt gesetzt → Backup aus previousSettings übernehmen
         if (!settings.e3dcIpBackup && previousSettings?.e3dcIpBackup) {
@@ -328,7 +313,7 @@ export class MemStorage implements IStorage {
       } else if (!settings.e3dcIp && previousSettings?.e3dcIp && previousSettings.e3dcIp !== "127.0.0.1:5502") {
         // User hat E3DC gelöscht (undefined/null) UND previous war ECHTE IP → Respektiere Löschung
         delete settings.e3dcIpBackup;
-        logStorage("debug", "Demo-Modus aktiv - E3DC IP gelöscht (User-Request)");
+        console.log(`[Storage] Demo-Modus aktiv - E3DC IP gelöscht (User-Request)`);
       }
       
       // FHEM URLs: Force Mock-URLs, erhalte Backups

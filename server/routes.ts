@@ -2,10 +2,13 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { createSocket, type Socket } from "dgram";
-import { settingsSchema, controlStateSchema, logSettingsSchema, type LogLevel, e3dcBatteryStatusSchema, type ControlState, e3dcLiveDataSchema } from "@shared/schema";
+import { settingsSchema, controlStateSchema, logSettingsSchema, type LogLevel, e3dcBatteryStatusSchema, type ControlState, e3dcLiveDataSchema, chargingStrategyConfigSchema, chargingStrategySchema } from "@shared/schema";
 import { e3dcClient } from "./e3dc-client";
 import { getE3dcModbusService } from "./e3dc-modbus";
 import { log } from "./logger";
+import { z } from "zod";
+import { ChargingStrategyController } from "./charging-strategy-controller";
+import { wallboxMockService } from "./wallbox-mock";
 
 const UDP_PORT = 7090;
 const UDP_TIMEOUT = 6000;
@@ -344,6 +347,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const report2 = await sendUdpCommand(settings.wallboxIp, "report 2");
       const report3 = await sendUdpCommand(settings.wallboxIp, "report 3");
 
+      // Phasenzahl aus Strömen ableiten (nicht aus Spannungen, da diese immer anliegen)
+      const i1 = report3?.["I1"] || 0;
+      const i2 = report3?.["I2"] || 0;
+      const i3 = report3?.["I3"] || 0;
+      
+      // Zähle wie viele Phasen aktiv sind (>100mA = 0.1A Threshold)
+      const CURRENT_THRESHOLD = 100; // mA
+      let activePhaseCount = 0;
+      if (i1 > CURRENT_THRESHOLD) activePhaseCount++;
+      if (i2 > CURRENT_THRESHOLD) activePhaseCount++;
+      if (i3 > CURRENT_THRESHOLD) activePhaseCount++;
+      
+      const detectedPhases = activePhaseCount; // 0, 1, 2, or 3
+
       const status = {
         state: report2?.State || 0,
         plug: report2?.Plug || 0,
@@ -352,11 +369,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ePres: report3["E pres"] || 0,  // Energie in Wh (Frontend konvertiert zu kWh)
         eTotal: report3["E total"] || 0,  // Energie in Wh (Frontend konvertiert zu kWh)
         power: (report3?.P || 0) / 1000000,
-        phases: report3?.["U1"] && report3?.["U2"] && report3?.["U3"] ? 3 : 
-                report3?.["U1"] ? 1 : 0,
-        i1: report3?.["I1"] ? report3["I1"] / 1000 : undefined,
-        i2: report3?.["I2"] ? report3["I2"] / 1000 : undefined,
-        i3: report3?.["I3"] ? report3["I3"] / 1000 : undefined,
+        phases: detectedPhases,
+        i1: i1 / 1000,
+        i2: i2 / 1000,
+        i3: i3 / 1000,
         lastUpdated: new Date().toISOString(),
       };
 
@@ -369,7 +385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lastPlugStatus: status.plug,
             lastPlugChange: new Date().toISOString(),
           });
-          console.log(`[Wallbox] Kabelstatus geändert: ${tracking.lastPlugStatus} -> ${status.plug}`);
+          log('info', 'wallbox', `Kabelstatus geändert: ${tracking.lastPlugStatus} -> ${status.plug}`);
         } else if (tracking.lastPlugStatus === undefined) {
           // Erster Aufruf - initialisiere ohne Zeitstempel
           storage.savePlugStatusTracking({
@@ -380,7 +396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(status);
     } catch (error) {
-      console.error("Failed to get wallbox status:", error);
+      log('error', 'wallbox', 'Failed to get wallbox status', error instanceof Error ? error.message : String(error));
       res.status(500).json({ error: "Failed to communicate with wallbox" });
     }
   });
@@ -403,7 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log("info", "wallbox", `Laden erfolgreich gestartet`);
       res.json({ success: true });
     } catch (error) {
-      console.error("Failed to start charging:", error);
+      log('error', 'wallbox', 'Failed to start charging', error instanceof Error ? error.message : String(error));
       res.status(500).json({ error: "Failed to start charging" });
     }
   });
@@ -426,7 +442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log("info", "wallbox", `Laden erfolgreich gestoppt`);
       res.json({ success: true });
     } catch (error) {
-      console.error("Failed to stop charging:", error);
+      log('error', 'wallbox', 'Failed to stop charging', error instanceof Error ? error.message : String(error));
       res.status(500).json({ error: "Failed to stop charging" });
     }
   });
@@ -468,7 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log("info", "wallbox", `Ladestrom erfolgreich geändert und verifiziert`, `Neuer Wert: ${current}A (${currentInMilliamps}mA)`);
       res.json({ success: true });
     } catch (error) {
-      console.error("Failed to set current:", error);
+      log('error', 'wallbox', 'Failed to set current', error instanceof Error ? error.message : String(error));
       res.status(500).json({ error: "Failed to set charging current" });
     }
   });
@@ -491,14 +507,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/settings", async (req, res) => {
     try {
-      const settings = settingsSchema.parse(req.body);
-      storage.saveSettings(settings);
+      const newSettings = settingsSchema.parse(req.body);
+      const oldSettings = storage.getSettings();
+      
+      // Prüfe ob Strategie sich geändert hat
+      const oldStrategy = oldSettings?.chargingStrategy?.activeStrategy;
+      const newStrategy = newSettings?.chargingStrategy?.activeStrategy;
+      const strategyChanged = oldStrategy !== newStrategy;
+      
+      // Prüfe ob Mock-Wallbox-Phasen sich geändert haben
+      const oldPhases = oldSettings?.mockWallboxPhases;
+      const newPhases = newSettings?.mockWallboxPhases;
+      const phasesChanged = oldPhases !== newPhases;
+      
+      storage.saveSettings(newSettings);
+      
+      // Demo-Modus: Aktualisiere Mock-Wallbox-Phasen ohne Neustart
+      if (newSettings.demoMode && phasesChanged && newPhases) {
+        try {
+          wallboxMockService.setPhases(newPhases);
+          log("info", "system", `Mock-Wallbox-Phasen aktualisiert: ${newPhases}P`, "Änderung sofort wirksam ohne Neustart");
+        } catch (error) {
+          log("warning", "system", "Mock-Wallbox-Phasen konnten nicht aktualisiert werden", error instanceof Error ? error.message : String(error));
+        }
+      }
       
       // E3DC-Konfiguration speichern wenn aktiviert
-      if (settings.e3dc?.enabled) {
+      if (newSettings.e3dc?.enabled) {
         try {
           log("info", "system", "E3DC-Konfiguration wird gespeichert");
-          e3dcClient.configure(settings.e3dc);
+          e3dcClient.configure(newSettings.e3dc);
           log("info", "system", "E3DC-Konfiguration erfolgreich gespeichert");
         } catch (error) {
           log("error", "system", "Fehler beim Speichern der E3DC-Konfiguration", error instanceof Error ? error.message : String(error));
@@ -506,6 +544,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (e3dcClient.isConfigured()) {
         e3dcClient.disconnect();
         log("info", "system", "E3DC-Konfiguration entfernt");
+      }
+      
+      // WICHTIG: Wenn Strategie geändert wurde, Battery Lock aktivieren/deaktivieren
+      if (strategyChanged && newStrategy) {
+        // Lazy-init Strategy Controller falls noch nicht vorhanden
+        if (!strategyController) {
+          strategyController = new ChargingStrategyController(sendUdpCommand);
+        }
+        
+        try {
+          log("info", "system", `Ladestrategie gewechselt auf: ${newStrategy}`);
+          await strategyController.handleStrategyChange(newStrategy);
+        } catch (error) {
+          log("warning", "system", "Battery Lock konnte nicht gesetzt werden", error instanceof Error ? error.message : String(error));
+          // Nicht kritisch - Strategie wurde trotzdem gespeichert
+        }
       }
       
       res.json({ success: true });
@@ -647,59 +701,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/controls/sync", async (req, res) => {
-    try {
-      const settings = storage.getSettings();
-      const currentState = storage.getControlState();
-      
-      
-      // Prüfe ob PV-URLs konfiguriert sind
-      if (!settings?.pvSurplusOnUrl) {
-        log("warning", "system", "Keine PV-Überschuss URL konfiguriert - Status-Synchronisation übersprungen");
-        return res.json(currentState);
-      }
-      
-      // Extrahiere Gerätenamen und Basis-URLs aus den konfigurierten URLs
-      const pvDeviceName = extractDeviceNameFromUrl(settings?.pvSurplusOnUrl);
-      const pvBaseUrl = extractBaseUrlFromUrl(settings?.pvSurplusOnUrl);
-      
-      // Warne wenn Gerätename oder Basis-URL nicht extrahiert werden konnte
-      if (settings?.pvSurplusOnUrl && (!pvDeviceName || !pvBaseUrl)) {
-        log("warning", "system", "PV-Überschuss URL konnte nicht geparst werden", `URL: ${settings.pvSurplusOnUrl}`);
-      }
-      
-      // Frage PV-Status ab
-      const pvState = pvDeviceName && pvBaseUrl ? await getFhemDeviceState(pvBaseUrl, pvDeviceName) : null;
-      
-      // Aktualisiere ControlState nur wenn externe Status erfolgreich abgefragt wurden
-      const newState = { ...currentState };
-      let hasChanges = false;
-      
-      if (pvState !== null && pvState !== currentState.pvSurplus) {
-        newState.pvSurplus = pvState;
-        hasChanges = true;
-        log("info", "system", `PV-Überschussladung extern geändert auf ${pvState ? "ein" : "aus"}`);
-        
-        // Sende Wallbox-Phasen-Umschaltung (Mock versteht "mode pv", echte Wallbox ignoriert)
-        if (settings?.wallboxIp) {
-          try {
-            await sendUdpCommand(settings.wallboxIp, `mode pv ${pvState ? '1' : '0'}`);
-            log("info", "wallbox", `Wallbox ${pvState ? "auf einphasige (6-32A)" : "auf dreiphasige (6-16A)"} Ladung umgeschaltet`);
-          } catch (error) {
-            // Fehler ignorieren - echte Wallbox kennt diesen Befehl nicht, das ist ok
-            log("debug", "wallbox", `mode pv Befehl ignoriert (normale Wallbox kennt diesen Befehl nicht)`);
-          }
-        }
-      }
-      
-      if (hasChanges) {
-        storage.saveControlState(newState);
-      }
-      
-      res.json(newState);
-    } catch (error) {
-      log("error", "system", "Fehler bei Status-Synchronisation", error instanceof Error ? error.message : String(error));
-      res.status(500).json({ error: "Failed to sync control state" });
-    }
+    // Endpoint nur für Kompatibilität beibehalten - keine FHEM-Synchronisation mehr
+    const currentState = storage.getControlState();
+    res.json(currentState);
   });
 
   app.get("/api/logs", (req, res) => {
@@ -729,6 +733,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === CHARGING STRATEGY API ROUTES ===
+  
+  app.get("/api/charging/context", (req, res) => {
+    try {
+      const context = storage.getChargingContext();
+      res.json(context);
+    } catch (error) {
+      log("error", "system", "Fehler beim Abrufen des Charging Context", error instanceof Error ? error.message : String(error));
+      res.status(500).json({ error: "Failed to retrieve charging context" });
+    }
+  });
+
+  app.post("/api/charging/strategy", async (req, res) => {
+    try {
+      const strategyRequestSchema = z.object({
+        strategy: chargingStrategySchema,
+      });
+      
+      const parsed = strategyRequestSchema.parse(req.body);
+      const { strategy } = parsed;
+
+      const settings = storage.getSettings();
+      if (!settings?.chargingStrategy) {
+        return res.status(400).json({ error: "Strategy configuration not found" });
+      }
+
+      const updatedConfig = {
+        ...settings.chargingStrategy,
+        activeStrategy: strategy,
+      };
+
+      storage.saveSettings({
+        ...settings,
+        chargingStrategy: updatedConfig,
+      });
+
+      // WICHTIG: Battery Lock aktivieren/deaktivieren basierend auf Strategie
+      if (strategyController) {
+        try {
+          await strategyController.handleStrategyChange(strategy);
+        } catch (error) {
+          log("warning", "system", "Battery Lock konnte nicht gesetzt werden", error instanceof Error ? error.message : String(error));
+          // Nicht kritisch - Strategie wurde trotzdem gespeichert
+        }
+      }
+
+      log("info", "system", `Ladestrategie gewechselt auf: ${strategy}`);
+      res.json({ success: true, strategy });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Invalid request data",
+          details: error.errors 
+        });
+      }
+      log("error", "system", "Fehler beim Wechseln der Ladestrategie", error instanceof Error ? error.message : String(error));
+      res.status(500).json({ error: "Failed to switch strategy" });
+    }
+  });
+
+  app.post("/api/charging/strategy/config", async (req, res) => {
+    try {
+      const config = chargingStrategyConfigSchema.parse(req.body);
+      const settings = storage.getSettings();
+
+      if (!settings) {
+        return res.status(400).json({ error: "Settings not found" });
+      }
+
+      storage.saveSettings({
+        ...settings,
+        chargingStrategy: config,
+      });
+
+      log("info", "system", "Ladestrategie-Konfiguration aktualisiert");
+      res.json({ success: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Invalid configuration data",
+          details: error.errors 
+        });
+      }
+      log("error", "system", "Fehler beim Speichern der Strategie-Konfiguration", error instanceof Error ? error.message : String(error));
+      res.status(500).json({ error: "Failed to save strategy configuration" });
+    }
+  });
+
 
   // Hilfsfunktion um aktuelle Zeit in der konfigurierten Zeitzone zu erhalten
   const getCurrentTimeInTimezone = (timezone: string = "Europe/Berlin"): string => {
@@ -749,14 +841,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Hilfsfunktion für Batterie-Entladesperre (E3DC)
   const lockBatteryDischarge = async (settings: any) => {
-    // Im Demo-Modus keine echten CLI-Befehle ausführen
-    if (settings?.demoMode) {
-      log("info", "system", `Batterie-Entladesperre: Demo-Modus - Befehl wird simuliert`);
-      return;
-    }
-    
     if (settings?.e3dc?.enabled && e3dcClient.isConfigured()) {
-      log("info", "system", `Batterie-Entladesperre: Verwende E3DC-Integration`);
+      log("info", "system", `Batterie-Entladesperre: Verwende E3DC-Integration${settings?.demoMode ? ' (Demo-Modus)' : ''}`);
       await e3dcClient.lockDischarge();
     } else {
       log("warning", "system", `Batterie-Entladesperre: E3DC nicht konfiguriert`);
@@ -764,14 +850,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   const unlockBatteryDischarge = async (settings: any) => {
-    // Im Demo-Modus keine echten CLI-Befehle ausführen
-    if (settings?.demoMode) {
-      log("info", "system", `Batterie-Entladesperre aufheben: Demo-Modus - Befehl wird simuliert`);
-      return;
-    }
-    
     if (settings?.e3dc?.enabled && e3dcClient.isConfigured()) {
-      log("info", "system", `Batterie-Entladesperre aufheben: Verwende E3DC-Integration`);
+      log("info", "system", `Batterie-Entladesperre aufheben: Verwende E3DC-Integration${settings?.demoMode ? ' (Demo-Modus)' : ''}`);
       await e3dcClient.unlockDischarge();
     } else {
       log("warning", "system", `Batterie-Entladesperre aufheben: E3DC nicht konfiguriert`);
@@ -780,15 +860,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Hilfsfunktion für Netzstrom-Laden (E3DC)
   const enableGridCharging = async (settings: any) => {
-    // Im Demo-Modus keine echten CLI-Befehle ausführen
-    if (settings?.demoMode) {
-      log("info", "system", `Netzstrom-Laden: Demo-Modus - Befehl wird simuliert`);
-      return;
-    }
-    
     if (settings?.e3dc?.enabled && e3dcClient.isConfigured()) {
       try {
-        log("info", "system", `Netzstrom-Laden: Verwende E3DC-Integration`);
+        log("info", "system", `Netzstrom-Laden: Verwende E3DC-Integration${settings?.demoMode ? ' (Demo-Modus)' : ''}`);
         await e3dcClient.enableGridCharge();
         return;
       } catch (error) {
@@ -801,15 +875,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   const disableGridCharging = async (settings: any) => {
-    // Im Demo-Modus keine echten CLI-Befehle ausführen
-    if (settings?.demoMode) {
-      log("info", "system", `Netzstrom-Laden deaktivieren: Demo-Modus - Befehl wird simuliert`);
-      return;
-    }
-    
     if (settings?.e3dc?.enabled && e3dcClient.isConfigured()) {
       try {
-        log("info", "system", `Netzstrom-Laden deaktivieren: Verwende E3DC-Integration`);
+        log("info", "system", `Netzstrom-Laden deaktivieren: Verwende E3DC-Integration${settings?.demoMode ? ' (Demo-Modus)' : ''}`);
         await e3dcClient.disableGridCharge();
         return;
       } catch (error) {
@@ -818,6 +886,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } else {
       log("warning", "system", `Netzstrom-Laden deaktivieren: E3DC nicht konfiguriert`);
+    }
+  };
+
+  // === CHARGING STRATEGY SCHEDULER ===
+  let chargingStrategyInterval: NodeJS.Timeout | null = null;
+  let strategyController: ChargingStrategyController | null = null;
+
+  const checkChargingStrategy = async () => {
+    try {
+      const settings = storage.getSettings();
+      const controlState = storage.getControlState();
+      
+      // Skip wenn keine Wallbox IP konfiguriert
+      if (!settings?.wallboxIp) {
+        return;
+      }
+
+      // Context auf "off" setzen wenn Strategy deaktiviert
+      const strategyConfig = settings.chargingStrategy;
+      if (!strategyConfig || strategyConfig.activeStrategy === "off") {
+        const context = storage.getChargingContext();
+        if (context.strategy !== "off") {
+          storage.updateChargingContext({ strategy: "off" });
+          log("info", "system", "Strategie auf 'off' gesetzt");
+        }
+        return;
+      }
+
+      // Validiere Strategie-Config mit Zod (verhindert Crash bei fehlenden Feldern)
+      try {
+        chargingStrategyConfigSchema.parse(strategyConfig);
+      } catch (error) {
+        log("warning", "system", "Strategie-Config unvollständig - überspringe Ausführung. Bitte Config in Settings vervollständigen.");
+        return;
+      }
+
+      // Skip wenn Night Charging aktiv (höhere Priorität)
+      if (controlState.nightCharging) {
+        log("info", "system", "Night Charging aktiv - Strategie pausiert");
+        return;
+      }
+
+      // Lazy-init Controller
+      if (!strategyController) {
+        strategyController = new ChargingStrategyController(sendUdpCommand);
+      }
+
+      // Hole E3DC Live-Daten (mit Wallbox-Leistung 0 für Überschuss-Berechnung)
+      if (!settings.e3dcIp) {
+        log("info", "system", "E3DC IP nicht konfiguriert - Strategie kann nicht ausgeführt werden");
+        return;
+      }
+
+      const modbusService = getE3dcModbusService();
+      if (!modbusService) {
+        log("info", "system", "E3DC Modbus Service nicht verfügbar - Strategie kann nicht ausgeführt werden");
+        return;
+      }
+
+      // Stelle Verbindung zum E3DC her (falls noch nicht geschehen)
+      try {
+        await modbusService.connect(settings.e3dcIp);
+      } catch (error) {
+        log("error", "system", "Fehler beim Verbinden zum E3DC Modbus Service", error instanceof Error ? error.message : String(error));
+        return;
+      }
+
+      // Hole aktuelle Wallbox-Leistung für korrekte Überschuss-Berechnung
+      let currentWallboxPower = 0;
+      try {
+        const report3 = await sendUdpCommand(settings.wallboxIp, "report 3");
+        // Power ist in Report 3 als P (in Milliwatt), dividiert durch 1000 für Watt
+        currentWallboxPower = (report3?.P || 0) / 1000;
+      } catch (error) {
+        // Falls Wallbox-Abfrage fehlschlägt, nutze 0W als Fallback
+        log("debug", "system", "Wallbox-Abfrage für E3DC-Surplus fehlgeschlagen - nutze 0W", error instanceof Error ? error.message : String(error));
+      }
+
+      let e3dcLiveData;
+      try {
+        e3dcLiveData = await modbusService.readLiveData(currentWallboxPower);
+      } catch (error) {
+        log("error", "system", "Fehler beim Abrufen der E3DC-Daten", error instanceof Error ? error.message : String(error));
+        return;
+      }
+
+      // Führe Strategie aus
+      log("info", "system", `Strategy Check: ${strategyConfig.activeStrategy}`);
+      await strategyController.processStrategy(
+        e3dcLiveData,
+        settings.wallboxIp
+      );
+
+    } catch (error) {
+      log("error", "system", "Fehler im Charging Strategy Scheduler", error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -996,6 +1159,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Initiale Prüfung beim Start (optional - prüft sofort)
   checkNightChargingSchedule();
+
+  // === STARTE CHARGING STRATEGY SCHEDULER ===
+  log("info", "system", "Scheduler für automatische Ladestrategien wird gestartet - prüft alle 15 Sekunden");
+  
+  // Starte sofort und dann alle 15 Sekunden
+  checkChargingStrategy();
+  chargingStrategyInterval = setInterval(checkChargingStrategy, 15 * 1000);
 
   const httpServer = createServer(app);
 

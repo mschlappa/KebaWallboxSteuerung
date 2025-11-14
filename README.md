@@ -24,43 +24,73 @@ Mit dieser App behalten Sie die Kontrolle über Ihre Wallbox und Ihr Energiesyst
 #### Wallbox-Monitoring
 - **Ladeleistung:** Sehen Sie auf einen Blick die aktuelle Leistung in kW
 - **Ladestrom:** Überwachen Sie den Stromfluss in Ampere über alle Phasen
+- **Phasen-Erkennung:** Automatische Erkennung, ob 1-phasig oder 3-phasig geladen wird
 - **Energie:** Verfolgen Sie die geladene Energie - wahlweise für die aktuelle Ladesitzung oder die Gesamtenergie
 - **Kabelstatus:** Erkennen Sie sofort, ob das Ladekabel angeschlossen ist
 
 #### E3DC S10 Energie-Monitoring
 - **PV-Leistung:** Aktuelle Solarstrom-Produktion in Echtzeit
 - **Batteriespeicher:** Ladezustand (SOC) und aktuelle Leistung
-- **Hausverbrauch:** Gesamtstromverbrauch Ihres Haushalts
+- **Hausverbrauch:** Gesamtstromverbrauch Ihres Haushalts (mit automatischer Wallbox-Korrektur)
 - **Netzbezug/-einspeisung:** Aktueller Stromfluss vom/zum Netz
 - **Autarkie & Eigenverbrauch:** Kennzahlen zur Energieeffizienz
 - **Auto-Refresh:** Alle 5 Sekunden automatische Aktualisierung
 
-### ⚡ Intelligente Ladesteuerung
-- **Manueller Start/Stop:** Starten oder stoppen Sie den Ladevorgang mit einem Fingertipp
-- **Ladestrom einstellen:** Passen Sie die Ladeleistung individuell an (6-16 Ampere)
+### ⚡ Intelligente Ladestrategien
+
+Wählen Sie aus **4 professionellen Ladestrategien**, die auf Ihre Bedürfnisse zugeschnitten sind:
+
+#### 1️⃣ Überschuss (Batterie priorisiert)
+- **Konzept:** Hausbatterie hat absolute Priorität - Wallbox erhält nur Überschuss NACH Batterie-Ladung
+- **Ideal für:** Maximale Eigenverbrauchsoptimierung, Batterie-Schonung
+- **Funktionsweise:** PV-Überschuss wird erst für die Hausbatterie verwendet, nur der Rest lädt das E-Auto
+- **E3DC-Integration:** Direkte Berechnung aus E3DC-Daten ohne FHEM
+
+#### 2️⃣ Überschuss (Fahrzeug priorisiert)
+- **Konzept:** Wallbox und Hausbatterie teilen sich den PV-Überschuss
+- **Ideal für:** Ausgewogenes Laden von Auto und Hausbatterie
+- **Funktionsweise:** Beide Verbraucher erhalten parallel PV-Überschuss
+- **Batterie-Schutz:** Automatische Reduktion bei längerer Batterie-Entladung
+
+#### 3️⃣ Maximum (mit Batterie)
+- **Konzept:** Maximale Ladeleistung durch Nutzung von PV + Batterie-Entladung
+- **Ideal für:** Schnellstmögliches Laden, wenn E-Auto dringend voll sein muss
+- **Funktionsweise:** Nutzt PV-Strom UND entlädt die Hausbatterie für maximale Wallbox-Leistung
+- **Hinweis:** Reduziert die Autarkie des Haushalts
+
+#### 4️⃣ Maximum (ohne Batterie)
+- **Konzept:** Maximale Ladeleistung nur aus PV + Netz
+- **Ideal für:** Schnelles Laden ohne Batterie-Entladung
+- **Funktionsweise:** Nutzt PV-Strom maximal, Rest kommt aus dem Netz
+- **Batterie bleibt geschont:** Keine Entladung der Hausbatterie
+
+### 🔧 Erweiterte Strategie-Konfiguration
+
+Feinjustierung aller Parameter für perfekte Anpassung:
+
+- **Mindest-Startleistung:** Schwellwert zum Starten der Ladung (500-5000W)
+- **Stopp-Schwellwert:** Unterschreitet der Überschuss diesen Wert, wird gestoppt (300-3000W)
+- **Start-Verzögerung:** Wartezeit vor Ladestart bei ausreichend Überschuss (30-600s)
+- **Stopp-Verzögerung:** Wartezeit vor Stopp bei zu wenig Überschuss (60-900s)
+- **Mindest-Stromänderung:** Minimale Differenz für Stromänderung (0-5A)
+- **Mindest-Änderungsintervall:** Mindestabstand zwischen Stromanpassungen (10-180s)
 
 ### 🏡 SmartHome-Integration
 
-Optimieren Sie Ihr Laden mit intelligenten Funktionen:
-
-#### PV-Überschussladung
-- Laden Sie automatisch, wenn Ihre Solaranlage überschüssigen Strom produziert
-- Maximale Eigenverbrauchsoptimierung
-- Integration mit FHEM SmartHome-System
-
-#### Nachtladung (zeitgesteuert)
-- Nutzen Sie günstige Nachttarife durch automatisches zeitgesteuertes Laden
-- Konfigurierbare Start- und Endzeit
-- Automatische Aktivierung zur eingestellten Zeit
+#### Zeitgesteuerte Ladung
+- **Automatische Zeitfenster:** Konfigurierbare Start- und Endzeit (z.B. 00:00-05:00)
+- **Ideal für Nachtstrom:** Nutzen Sie günstige Nachttarife
+- **Maximale Leistung:** Lädt automatisch mit Maximalstrom im Zeitfenster
+- **Strategie-Kombination:** Kann mit allen anderen Strategien kombiniert werden
 
 #### E3DC-spezifische Funktionen
-- **Batteriesperrung:** Verhindern Sie, dass Ihre Hausbatterie zum Laden des Autos entladen wird (nur bei E3DC-Integration)
-- **Netzladung:** Laden Sie Ihre Hausbatterie aus dem Netz während der Nachtladung (optional, nur bei E3DC-Integration)
+- **Batteriesperrung:** Verhindert Batterie-Entladung zum Laden des Autos (via CLI-Tool)
+- **Netzladung:** Lädt Hausbatterie aus dem Netz während der Nachtladung (via CLI-Tool)
 
 ### ⚙️ Einfache Einrichtung
 - Wallbox-IP-Adresse konfigurieren
-- E3DC S10 IP-Adresse und CLI-Tool einrichten (optional)
-- SmartHome-Webhooks für FHEM-Integration einrichten (optional)
+- E3DC S10 IP-Adresse und Modbus TCP einrichten (für Ladestrategien)
+- E3DC CLI-Tool (e3dcset) für Batterie-/Netzsteuerung (optional)
 - Alle Einstellungen werden automatisch gespeichert
 
 ### 📋 Protokollierung & Diagnose
@@ -70,57 +100,76 @@ Optimieren Sie Ihr Laden mit intelligenten Funktionen:
 
 ## Screenshots
 
-### Status & E3DC Monitoring
+### Status-Übersicht & Monitoring
 
 <table>
 <tr>
 <td width="50%">
 <strong>Wallbox Status-Seite</strong><br>
-Behalten Sie den Überblick über Ihre aktuelle Ladesitzung
+Behalten Sie den Überblick über Ihre aktuelle Ladesitzung - Leistung, Strom, Phasen und Energie auf einen Blick
 <br><br>
-<img src="docs/screenshots/status-seite.png" alt="Status-Seite" width="100%">
+<img src="docs/screenshots/status-seite.png" alt="Wallbox Status" width="100%">
 </td>
 <td width="50%">
 <strong>E3DC Energie-Monitoring</strong><br>
-Live-Daten Ihrer PV-Anlage und Batteriespeicher
+Live-Daten Ihrer PV-Anlage: PV-Produktion, Batterie-SOC, Hausverbrauch, Netz, Autarkie
 <br><br>
-<img src="docs/screenshots/e3dc-seite.png" alt="E3DC-Seite" width="100%">
+<img src="docs/screenshots/e3dc-seite.png" alt="E3DC Monitoring" width="100%">
 </td>
 </tr>
 </table>
 
-### Batterie-Steuerung & Einstellungen
+### Ladestrategien konfigurieren
+
+<table>
+<tr>
+<td width="50%">
+<strong>Überschuss-Strategie</strong><br>
+Wählen Sie zwischen Batterie- oder Fahrzeug-priorisierter Ladung mit Live-Überschussanzeige
+<br><br>
+<img src="docs/screenshots/charging-strategy-surplus.jpeg" alt="Überschuss-Strategie" width="100%">
+</td>
+<td width="50%">
+<strong>Zeitgesteuerte Ladung</strong><br>
+Konfigurieren Sie automatische Ladung in definierten Zeitfenstern für günstige Nachttarife
+<br><br>
+<img src="docs/screenshots/charging-strategy-scheduled.jpeg" alt="Zeitgesteuerte Ladung" width="100%">
+</td>
+</tr>
+</table>
+
+### Erweiterte Einstellungen & System
+
+<table>
+<tr>
+<td width="50%">
+<strong>Strategie-Parameter</strong><br>
+Feinjustierung aller Schwellwerte und Verzögerungen für perfekte Anpassung an Ihr System
+<br><br>
+<img src="docs/screenshots/strategy-parameters.jpeg" alt="Strategie-Parameter" width="100%">
+</td>
+<td width="50%">
+<strong>Demo-Modus & Einstellungen</strong><br>
+Testen Sie alle Funktionen ohne echte Hardware oder konfigurieren Sie Ihre Wallbox und E3DC
+<br><br>
+<img src="docs/screenshots/settings-demo.jpeg" alt="Einstellungen" width="100%">
+</td>
+</tr>
+</table>
+
+### E3DC-Steuerung & Diagnose
 
 <table>
 <tr>
 <td width="50%">
 <strong>E3DC Batterie-Steuerung</strong><br>
-Intelligente Steuerung Ihrer Hausbatterie während des Ladevorgangs
+Aktivieren Sie Batteriesperrung und Netzladung während der Fahrzeugladung
 <br><br>
 <img src="docs/screenshots/e3dc-batterie-steuerung.png" alt="Batterie-Steuerung" width="100%">
 </td>
 <td width="50%">
-<strong>Einstellungen</strong><br>
-Konfigurieren Sie Wallbox, E3DC und SmartHome-Verbindungen
-<br><br>
-<img src="docs/screenshots/einstellungen-seite.png" alt="Einstellungen-Seite" width="100%">
-</td>
-</tr>
-</table>
-
-### SmartHome-Steuerung & Protokollierung
-
-<table>
-<tr>
-<td width="50%">
-<strong>Wallbox SmartHome-Steuerung</strong><br>
-Konfigurieren Sie zeitgesteuerte Ladung und PV-Überschussladung
-<br><br>
-<img src="docs/screenshots/wallbox-smarthome-steuerung.png" alt="SmartHome-Steuerung" width="100%">
-</td>
-<td width="50%">
 <strong>Logs & Diagnose</strong><br>
-Detaillierte Kommunikationsprotokolle zur Fehlersuche
+Detaillierte Kommunikationsprotokolle mit der Wallbox zur Fehlersuche und Analyse
 <br><br>
 <img src="docs/screenshots/logs-seite.png" alt="Logs-Seite" width="100%">
 </td>
@@ -136,7 +185,9 @@ Detaillierte Kommunikationsprotokolle zur Fehlersuche
 - **Netzwerkverbindung:** Alle Geräte im gleichen lokalen Netzwerk
 
 ### Software
-- **Optional:** FHEM SmartHome-System für automatische PV-Überschuss-Ladefunktionen
+- **E3DC S10 mit Modbus TCP:** Erforderlich für PV-Überschuss-Ladestrategien
+  - Modbus TCP muss am E3DC aktiviert sein (Standard-Port 502)
+  - Ermöglicht Live-Monitoring von PV, Batterie, Hausverbrauch, Netz
 - **Optional:** E3DC CLI-Tool (e3dcset) für Batteriesperrung und Netzladung
   - GitHub: [mschlappa/e3dcset](https://github.com/mschlappa/e3dcset)
   - Ermöglicht Batteriesteuerung und Netzladung via Kommandozeile
@@ -185,49 +236,76 @@ Detaillierte Kommunikationsprotokolle zur Fehlersuche
   - Installation & Konfiguration siehe e3dcset README
 - Nach Aktivierung erscheinen die E3DC-Monitoring-Seite und zusätzliche Steuerungs-Optionen
 
-#### 3. SmartHome-URLs konfigurieren (optional)
-- Wenn Sie FHEM nutzen, tragen Sie die Webhook-URLs für PV-Überschussladung ein
-- Die App synchronisiert dann automatisch mit Ihren SmartHome-Geräten
-- Standard-URLs sind bereits als Beispiel eingetragen
-
-#### 4. Loslegen
+#### 3. Loslegen
 - Wechseln Sie zur Status-Seite
 - Sie sehen nun alle aktuellen Ladedaten
 - Nutzen Sie die SmartHome-Controls für intelligente Ladefunktionen
 - Bei aktivierter E3DC-Integration: Wechseln Sie zur E3DC-Seite für Energie-Monitoring
 
-## Funktionsweise der SmartHome-Funktionen
+## Funktionsweise der Ladestrategien
 
-### PV-Überschussladung
-**Wenn aktiviert:**
-- Die App kommuniziert mit Ihrer Solaranlage über FHEM
-- Bei Stromüberschuss wird automatisch geladen
-- Bei wenig Sonne wird der Ladevorgang pausiert
-- **Hinweis:** Der Ladestrom-Regler wird deaktiviert, da die Leistung automatisch gesteuert wird
-- **Statusanzeige:** Ein Solarenergie-Icon zeigt an, wenn PV-Überschussladung aktiv ist
+### Überschuss-Strategien (Batterie/Fahrzeug priorisiert)
 
-### Nachtladung
-**Wenn aktiviert:**
-- Zeitgesteuertes Laden nach konfiguriertem Zeitplan (z.B. 00:00-05:00)
-- Automatische Aktivierung zur Start-Zeit, automatische Deaktivierung zur End-Zeit
-- Ladestrom wird automatisch auf Maximum gesetzt für schnellstes Laden
+**Automatische Regelung:**
+- Die App liest Live-Daten von Ihrem E3DC S10 System via Modbus TCP
+- Berechnet automatisch den verfügbaren PV-Überschuss
+- Passt den Ladestrom dynamisch an die aktuelle PV-Produktion an
+- **On-the-fly Strategiewechsel:** Sie können jederzeit die Strategie wechseln, ohne die laufende Ladung zu stoppen
+
+**Batterie priorisiert:**
+- Formel: `Überschuss = (PV - Haus) - Batterie-Aufnahme`
+- Hausbatterie wird immer zuerst geladen
+- E-Auto erhält nur den Rest-Überschuss
+- Maximale Eigenverbrauchsoptimierung
+
+**Fahrzeug priorisiert:**
+- Auto und Batterie teilen sich den PV-Überschuss gleichberechtigt
+- Automatischer Batterie-Schutz bei längerer Entladung
+- Ausgewogenes Verhältnis zwischen Autarkie und Auto-Ladung
+
+**Intelligente Schwellwerte:**
+- **Start-Schwellwert:** Ladung startet nur bei ausreichend Überschuss (konfigurierbar 500-5000W)
+- **Stopp-Schwellwert:** Ladung stoppt bei zu wenig Überschuss (konfigurierbar 300-3000W)
+- **Verzögerungen:** Vermeiden ständiges Ein/Aus bei Wolken (30-900s konfigurierbar)
+
+### Maximum-Strategien (mit/ohne Batterie)
+
+**Maximum mit Batterie:**
+- Nutzt PV-Strom + Batterie-Entladung für maximale Wallbox-Leistung
+- Ideal wenn E-Auto schnell voll sein muss
+- Reduziert vorübergehend die Hausautarkie
+
+**Maximum ohne Batterie:**
+- Nutzt PV-Strom maximal, Rest aus dem Netz
+- Batterie bleibt geschont und wird nicht entladen
+- Schnelles Laden ohne Batterie-Verluste
+
+### Zeitgesteuerte Ladung
+
+**Automatisches Zeitfenster:**
+- Konfigurierbare Start- und Endzeit (z.B. 00:00-05:00)
+- Automatische Aktivierung zur Start-Zeit
+- Lädt mit maximaler Leistung (32A bei 1-phasig, 16A bei 3-phasig)
 - Ideal für günstige Nachtstromtarife
-- **Statusanzeige:** Ein Mond-Icon zeigt an, wenn Nachtladung aktiv ist
+- Kann mit jeder anderen Strategie kombiniert werden
 
-### Batteriesperrung (nur E3DC)
-**Wenn aktiviert:**
-- Ihre E3DC-Hausbatterie wird nicht zum Laden des E-Autos genutzt
-- Verhindert unnötige Lade-/Entladeverluste der Hausbatterie
-- Die Wallbox lädt nur mit Netzstrom oder direktem PV-Überschuss
-- **Steuerung:** Via E3DC CLI-Tool ([e3dcset](https://github.com/mschlappa/e3dcset))
-- **Statusanzeige:** Ein Batterie-Schloss-Icon zeigt an, wenn die Batterie gesperrt ist
+**Statusanzeige:**
+- Ein Uhr-Icon zeigt an, wenn zeitgesteuerte Ladung aktiv ist
+- Countdown bis zur nächsten automatischen Aktion
 
-### Netzladung der Batterie (nur E3DC)
-**Wenn aktiviert:**
-- Lädt Ihre E3DC-Hausbatterie aus dem Netz während der Nachtladung
-- Nutzen Sie günstige Nachtstromtarife zum Laden der Hausbatterie
-- Kann optional mit Nachtladung kombiniert werden
-- **Steuerung:** Via E3DC CLI-Tool ([e3dcset](https://github.com/mschlappa/e3dcset))
+### E3DC-Integration
+
+**Batteriesperrung:**
+- Verhindert Batterie-Entladung zum Laden des E-Autos
+- Wird via E3DC CLI-Tool ([e3dcset](https://github.com/mschlappa/e3dcset)) gesteuert
+- Aktiviert/deaktiviert automatisch bei Ladestart/-stopp
+- Statusanzeige: Batterie-Schloss-Icon
+
+**Netzladung:**
+- Lädt Hausbatterie aus dem Netz während der Nachtladung
+- Nutzen Sie günstige Nachtstromtarife für die Hausbatterie
+- Wird via E3DC CLI-Tool gesteuert
+- Kann optional mit zeitgesteuerter Ladung kombiniert werden
 
 ## Häufige Fragen (FAQ)
 
@@ -243,10 +321,23 @@ Detaillierte Kommunikationsprotokolle zur Fehlersuche
 - Die E3DC-Seite erscheint erst nach Aktivierung der E3DC-Integration
 - In der Demo: E3DC-Mock läuft automatisch auf 127.0.0.1:5502
 
-**Der Ladestrom-Regler ist ausgegraut - warum?**
-- Bei aktivierter PV-Überschussladung wird der Strom automatisch geregelt
-- Deaktivieren Sie PV-Überschussladung, um manuell zu steuern
-- Wenn kein Kabel angeschlossen ist, kann der Strom nicht eingestellt werden
+**Welche Ladestrategie soll ich wählen?**
+- **Überschuss (Batterie priorisiert):** Wenn Ihre Hausbatterie Priorität haben soll - beste Eigenverbrauchsoptimierung
+- **Überschuss (Fahrzeug priorisiert):** Wenn Auto und Batterie gleichberechtigt laden sollen
+- **Maximum (mit Batterie):** Wenn das Auto schnell voll sein muss und Batterie-Entladung OK ist
+- **Maximum (ohne Batterie):** Wenn das Auto schnell laden soll, aber Batterie geschont werden soll
+- **Tipp:** Sie können jederzeit die Strategie wechseln, auch während des Ladens!
+
+**Kann ich die Strategie während des Ladens wechseln?**
+- Ja! Die App unterstützt "on-the-fly" Strategiewechsel
+- Die Ladung wird nicht unterbrochen
+- Der neue Ladestrom wird innerhalb von 15 Sekunden angepasst
+
+**Warum lädt mein Auto nicht bei Überschuss-Strategie?**
+- Prüfen Sie, ob ausreichend PV-Überschuss vorhanden ist (mindestens Mindest-Startleistung)
+- Achten Sie auf die Start-Verzögerung (default: 30s) - die Ladung startet nicht sofort
+- Bei "Batterie priorisiert": Die Hausbatterie muss erst voll/gesättigt sein
+- Überprüfen Sie in den Strategie-Parametern die konfigurierten Schwellwerte
 
 **Wie sehe ich, ob extern Änderungen vorgenommen wurden?**
 - Die Wallbox-Daten werden alle 5 Sekunden automatisch aktualisiert
@@ -266,9 +357,9 @@ Detaillierte Kommunikationsprotokolle zur Fehlersuche
 
 **Wie funktioniert die Demo?**
 - Die Demo nutzt einen eingebauten Mock-Server
-- Simuliert KEBA Wallbox, E3DC S10 und FHEM SmartHome
-- Realistische Daten mit tageszeit-abhängiger PV-Produktion
-- Alle Funktionen sind voll nutzbar
+- Simuliert KEBA Wallbox und E3DC S10 System
+- Realistische Daten mit tageszeit-abhängiger PV-Produktion und saisonalen Variationen
+- Alle Ladestrategien sind voll nutzbar
 - Keine echte Hardware erforderlich
 
 **Wie installiere ich die App lokal?**
@@ -278,15 +369,47 @@ Detaillierte Kommunikationsprotokolle zur Fehlersuche
 
 ## Technische Details
 
-- **Entwickelt als:** Progressive Web App (PWA)
-- **Frontend:** React 18+, TypeScript, Wouter, TanStack Query, shadcn/ui
-- **Backend:** Node.js, Express.js, TypeScript
-- **Design:** Material Design 3 Prinzipien
-- **Optimiert für:** Mobile Geräte (Smartphones & Tablets)
-- **Sprache:** Deutsch
-- **Offline-Fähigkeit:** App funktioniert auch ohne Internetverbindung (nur lokales Netzwerk erforderlich)
-- **E3DC-Integration:** Modbus TCP für Live-Monitoring, CLI-Tool (e3dcset) für Batteriesteuerung
-- **Zeitzone:** Alle zeitbasierten Funktionen nutzen Europe/Berlin
+### Frontend
+- **Framework:** React 18+ mit TypeScript (Vite)
+- **Routing:** Wouter (minimalistisch, PWA-optimiert)
+- **State Management:** TanStack Query v5 (für Server-State)
+- **UI-Komponenten:** shadcn/ui (Radix UI Primitives)
+- **Styling:** Tailwind CSS mit Material Design 3 Prinzipien
+- **Mobile-First:** Optimiert für Touch-Geräte
+
+### Backend
+- **Runtime:** Node.js mit Express.js, TypeScript
+- **Kommunikation:** 
+  - **KEBA Wallbox:** UDP-Protokoll (Port 7090)
+  - **E3DC S10:** Modbus TCP (Port 502) für Live-Daten
+  - **E3DC Steuerung:** CLI-Tool (e3dcset) für Batterie-/Netzladung
+- **Datenhaltung:** File-based JSON Storage mit Atomicity
+- **Logging:** Strukturiertes Logging mit Log-Levels
+
+### Ladestrategien-Controller
+- **Polling-Intervall:** 15 Sekunden (automatische Überprüfung)
+- **Phasen-Erkennung:** Automatisch aus Stromwerten (1P/3P)
+- **Surplus-Berechnung:** Direkt aus E3DC Modbus-Daten
+- **Dwell-Time Protection:** 30s Mindestabstand zwischen Stromanpassungen
+- **On-the-fly Switching:** Strategiewechsel ohne Lade-Unterbrechung
+
+### Demo-Modus
+- **Unified Mock Server:** Simuliert Wallbox und E3DC S10 in einem Prozess
+- **Realistische Simulation:** Tageszeit-abhängige PV-Kurven, saisonale Variation (November: ~3.5kW Peak, Sommer: ~8kW Peak)
+- **Auto-Start:** Startet automatisch bei DEMO_AUTOSTART=true
+- **State-Synchronisation:** Wallbox-Leistung beeinflusst E3DC Grid-Berechnung
+- **Realistische Haushaltslasten:** Morgen-/Mittag-/Abend-Peaks mit Basis-Verbrauch
+
+### Sicherheit & Zuverlässigkeit
+- **CLI Output Sanitization:** Sichere Ausführung von E3DC-Befehlen
+- **Modbus Auto-Recovery:** Automatische Wiederverbindung bei Verbindungsabbruch
+- **Atomic File Writes:** Crash-sichere Datenpersistenz
+- **Type Safety:** Zod-Schemas für Runtime-Validierung
+
+### Zeitzone & Lokalisierung
+- **Feste Zeitzone:** Europe/Berlin für alle zeitbasierten Operationen
+- **Sprache:** Deutsch (UI, Logs, Dokumentation)
+- **Offline-Fähigkeit:** App funktioniert ohne Internet (nur lokales Netzwerk)
 
 ## Sicherheitshinweise
 

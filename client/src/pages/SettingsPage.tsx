@@ -58,7 +58,17 @@ export default function SettingsPage() {
         gridChargeDisableCommand: "",
         gridChargeDuringNightCharging: false,
       },
+      chargingStrategy: {
+        activeStrategy: "off",
+        minStartPowerWatt: 1400,
+        stopThresholdWatt: 1000,
+        startDelaySeconds: 120,
+        stopDelaySeconds: 300,
+        minCurrentChangeAmpere: 1,
+        minChangeIntervalSeconds: 60,
+      },
       demoMode: false,
+      mockWallboxPhases: 3,
     },
   });
 
@@ -74,7 +84,23 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (settings) {
-      form.reset(settings);
+      const strategyDefaults = {
+        activeStrategy: "off" as const,
+        minStartPowerWatt: 1400,
+        stopThresholdWatt: 1000,
+        startDelaySeconds: 120,
+        stopDelaySeconds: 300,
+        minCurrentChangeAmpere: 1,
+        minChangeIntervalSeconds: 60,
+      };
+      
+      form.reset({
+        ...settings,
+        chargingStrategy: {
+          ...strategyDefaults,
+          ...settings.chargingStrategy,
+        },
+      });
       formHydratedRef.current = true;
     }
   }, [settings, form]);
@@ -197,6 +223,84 @@ export default function SettingsPage() {
                   disabled={isLoadingSettings || !formHydratedRef.current || saveSettingsMutation.isPending}
                 />
               </div>
+              
+              {form.watch("demoMode") && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    <Label htmlFor="mock-wallbox-phases" className="text-sm font-medium">
+                      Mock-Wallbox Phasen
+                    </Label>
+                    <Select
+                      value={String(form.watch("mockWallboxPhases") ?? 3)}
+                      onValueChange={(value) => form.setValue("mockWallboxPhases", Number(value) as 1 | 3)}
+                    >
+                      <SelectTrigger id="mock-wallbox-phases" className="h-12" data-testid="select-mock-phases">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 Phase (einphasig)</SelectItem>
+                        <SelectItem value="3">3 Phasen (dreiphasig)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Simuliert den physischen Phasen-Umschalter der Wallbox
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Simulierte Tageszeit
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        id="mock-time-enabled"
+                        checked={form.watch("mockTimeEnabled") ?? false}
+                        onCheckedChange={(checked) => {
+                          form.setValue("mockTimeEnabled", checked);
+                          if (checked) {
+                            const now = new Date();
+                            const year = now.getFullYear();
+                            const month = String(now.getMonth() + 1).padStart(2, '0');
+                            const day = String(now.getDate()).padStart(2, '0');
+                            form.setValue("mockDateTime", `${year}-${month}-${day}T12:00`);
+                          } else {
+                            form.setValue("mockDateTime", "");
+                          }
+                        }}
+                        data-testid="switch-mock-time-enabled"
+                      />
+                      {form.watch("mockTimeEnabled") && (
+                        <Input
+                          id="mock-datetime"
+                          type="datetime-local"
+                          {...form.register("mockDateTime")}
+                          className="h-12 border-none bg-transparent p-0 pl-3 text-left focus-visible:ring-0 [-webkit-appearance:none] [&::-webkit-calendar-picker-indicator]:dark:invert [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:p-0 [&::-webkit-datetime-edit-text]:p-0 [&::-webkit-datetime-edit-text]:m-0 [&::-webkit-datetime-edit-fields-wrapper]:p-0"
+                          data-testid="input-mock-datetime"
+                        />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Datum steuert Jahreszeit (Winter: ~3.5kW Peak, Sommer: ~8kW Peak), Uhrzeit die PV-Kurve
+                    </p>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const currentSettings = form.getValues();
+                      saveSettingsMutation.mutate(currentSettings);
+                    }}
+                    disabled={saveSettingsMutation.isPending}
+                    className="w-full"
+                    data-testid="button-save-demo-settings"
+                  >
+                    {saveSettingsMutation.isPending ? "Speichern..." : "Demo-Einstellungen speichern"}
+                  </Button>
+                </>
+              )}
             </div>
 
             <Separator />
@@ -371,6 +475,143 @@ export default function SettingsPage() {
                   </>
                 )}
               </div>
+
+            <Separator />
+
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="space-y-2">
+                <Label className="text-base font-medium">
+                  Ladestrategie-Parameter
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Die aktive Strategie kann auf der Statusseite gewählt werden
+                </p>
+              </div>
+
+              <Separator />
+              
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="min-start-power" className="text-sm font-medium">
+                    Mindest-Startleistung (W)
+                  </Label>
+                  <Input
+                    id="min-start-power"
+                    type="number"
+                    min="500"
+                    max="5000"
+                    step="100"
+                    {...form.register("chargingStrategy.minStartPowerWatt", { valueAsNumber: true })}
+                    className="h-12"
+                    data-testid="input-min-start-power"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Mindest-Überschuss zum Starten der Ladung (500-5000 W)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="stop-threshold" className="text-sm font-medium">
+                    Stopp-Schwellwert (W)
+                  </Label>
+                  <Input
+                    id="stop-threshold"
+                    type="number"
+                    min="300"
+                    max="3000"
+                    step="100"
+                    {...form.register("chargingStrategy.stopThresholdWatt", { valueAsNumber: true })}
+                    className="h-12"
+                    data-testid="input-stop-threshold"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Unterschreitet der Überschuss diesen Wert, wird die Ladung gestoppt (300-3000 W)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="start-delay" className="text-sm font-medium">
+                    Start-Verzögerung (Sekunden)
+                  </Label>
+                  <Input
+                    id="start-delay"
+                    type="number"
+                    min="30"
+                    max="600"
+                    step="30"
+                    {...form.register("chargingStrategy.startDelaySeconds", { valueAsNumber: true })}
+                    className="h-12"
+                    data-testid="input-start-delay"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Wartezeit bevor Ladung startet (30-600 s)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="stop-delay" className="text-sm font-medium">
+                    Stopp-Verzögerung (Sekunden)
+                  </Label>
+                  <Input
+                    id="stop-delay"
+                    type="number"
+                    min="60"
+                    max="900"
+                    step="60"
+                    {...form.register("chargingStrategy.stopDelaySeconds", { valueAsNumber: true })}
+                    className="h-12"
+                    data-testid="input-stop-delay"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Wartezeit bevor Ladung stoppt (60-900 s)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="min-current-change" className="text-sm font-medium">
+                    Mindest-Stromänderung (A)
+                  </Label>
+                  <Input
+                    id="min-current-change"
+                    type="number"
+                    min="0.1"
+                    max="5"
+                    step="0.1"
+                    {...form.register("chargingStrategy.minCurrentChangeAmpere", { valueAsNumber: true })}
+                    className="h-12"
+                    data-testid="input-min-current-change"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Mindestdifferenz für Stromänderung (0.1-5 A)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="min-change-interval" className="text-sm font-medium">
+                    Mindest-Änderungsintervall (Sekunden)
+                  </Label>
+                  <Input
+                    id="min-change-interval"
+                    type="number"
+                    min="10"
+                    max="300"
+                    step="10"
+                    {...form.register("chargingStrategy.minChangeIntervalSeconds", { valueAsNumber: true })}
+                    className="h-12"
+                    data-testid="input-min-change-interval"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Mindestabstand zwischen Stromänderungen (10-300 s)
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-md bg-muted">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Hinweis:</strong> Die Strategie steuert automatisch den Ladestrom basierend auf dem verfügbaren PV-Überschuss.
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <Button
               type="submit"
