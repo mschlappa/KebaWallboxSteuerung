@@ -18,6 +18,7 @@ export class WallboxMockService {
   private enabled: boolean = false; // System aktiviert (standardmäßig AUS im Demo-Modus)
   private state: number = 2; // 0=Starting, 1=NotReady, 2=Ready, 3=Charging, 4=Error, 5=AuthReq
   private plug: number = 7; // 0=unplugged, 1=cable plugged in station, 3=cable plugged in EV, 5=locking, 7=locked
+  private input: number = 0; // Potenzialfreier Kontakt (0=aus, 1=ein)
   private maxCurrent: number = 16000; // 16A in mA (3-phasig) oder 32000 mA (1-phasig)
   private currentSetpoint: number = 6000; // Aktueller Lade-Sollwert in mA
   private phases: number = 3; // 1=einphasig (PV-Überschuss), 3=dreiphasig (normal)
@@ -32,10 +33,14 @@ export class WallboxMockService {
   private currentPower: number = 0; // Aktuelle Ladeleistung in W
   private targetPower: number = 0; // Ziel-Ladeleistung in W
   
+  // Broadcast system
+  private broadcastCallback: ((data: any) => void) | null = null;
+  
   constructor() {
     // Initialer Zustand: Kabel gesteckt, bereit zum Laden
     this.plug = 7;
     this.state = 2;
+    this.input = 0;
   }
 
   /**
@@ -77,7 +82,7 @@ export class WallboxMockService {
       "Tmo CT": 0,
       "Setenergy": 0,
       "Output": this.enabled ? 1 : 0,
-      "Input": 0,
+      "Input": this.input,
       "X2 phaseSwitch source": 4,
       "X2 phaseSwitch": 0,
       "Sec": 6789
@@ -169,18 +174,26 @@ export class WallboxMockService {
     if (cmd === "ena") {
       if (value === "1") {
         // Laden aktivieren
+        const oldState = this.state;
         this.enabled = true;
         if (this.plug === 7) { // Kabel gesteckt und verriegelt
           this.state = 3; // Charging
           this.calculateChargingPower();
+          if (oldState !== this.state) {
+            this.sendBroadcast({ "State": this.state });
+          }
         }
         return { "TCH-OK": "done" };
       } else if (value === "0") {
         // Laden deaktivieren
+        const oldState = this.state;
         this.enabled = false;
         this.state = 2; // Ready
         this.targetPower = 0;
         this.currentPower = 0;
+        if (oldState !== this.state) {
+          this.sendBroadcast({ "State": this.state });
+        }
         return { "TCH-OK": "done" };
       }
     }
@@ -302,11 +315,15 @@ export class WallboxMockService {
       }
     } else if (clampedPower === 0) {
       // Komplett aus
+      const oldState = this.state;
       this.targetPower = 0;
       this.currentPower = 0;
       this.currentSetpoint = 0;
       this.state = 2; // Ready
       this.enabled = false;
+      if (oldState !== this.state) {
+        this.sendBroadcast({ "State": this.state });
+      }
     } else {
       // Strom berechnen basierend auf Phasenzahl
       let requiredCurrent: number;
@@ -325,8 +342,12 @@ export class WallboxMockService {
       
       // Reaktiviere Wallbox wenn Kabel gesteckt
       if (this.plug === 7) {
+        const oldState = this.state;
         this.enabled = true;
         this.state = 3; // Charging
+        if (oldState !== this.state) {
+          this.sendBroadcast({ "State": this.state });
+        }
       }
     }
   }
@@ -342,6 +363,9 @@ export class WallboxMockService {
    * Simuliert Kabelstecker-Event (für Testing)
    */
   plugCable(plugged: boolean): void {
+    const oldPlug = this.plug;
+    const oldState = this.state;
+    
     if (plugged) {
       this.plug = 7; // Locked
       this.state = 2; // Ready
@@ -351,6 +375,14 @@ export class WallboxMockService {
       this.enabled = false;
       this.targetPower = 0;
       this.currentPower = 0;
+    }
+    
+    // Broadcasts senden bei Änderungen
+    if (oldPlug !== this.plug) {
+      this.sendBroadcast({ "Plug": this.plug });
+    }
+    if (oldState !== this.state) {
+      this.sendBroadcast({ "State": this.state });
     }
   }
 
@@ -412,6 +444,7 @@ export class WallboxMockService {
     this.enabled = false;
     this.state = 2; // Ready
     this.plug = 7; // Locked
+    this.input = 0; // Input aus
     this.currentSetpoint = 6000; // 6A
     this.currentPower = 0;
     this.targetPower = 0;
@@ -419,6 +452,82 @@ export class WallboxMockService {
     this.maxCurrent = 16000; // 16A
     this.pvSurplusMode = false;
     this.lastUpdateTime = Date.now();
+  }
+
+  /**
+   * Registriert Broadcast-Callback (für UDP-Broadcasts im Demo-Modus)
+   */
+  setBroadcastCallback(callback: (data: any) => void): void {
+    this.broadcastCallback = callback;
+  }
+
+  /**
+   * Sendet einen UDP-Broadcast (nur wenn Callback registriert)
+   */
+  private sendBroadcast(data: any): void {
+    if (this.broadcastCallback) {
+      this.broadcastCallback(data);
+    }
+  }
+
+  /**
+   * Getter für Input (potenzialfreier Kontakt)
+   */
+  getInput(): number {
+    return this.input;
+  }
+
+  /**
+   * Setter für Input (potenzialfreier Kontakt)
+   * Sendet Broadcast bei Änderung
+   */
+  setInput(value: 0 | 1): void {
+    if (this.input !== value) {
+      this.input = value;
+      this.sendBroadcast({ "Input": value });
+    }
+  }
+
+  /**
+   * Getter für Plug-Status (Kabelverbindung)
+   */
+  getPlugStatus(): number {
+    return this.plug;
+  }
+
+  /**
+   * Setter für Plug-Status (Kabelverbindung)
+   * Sendet Broadcast bei Änderung
+   * KEBA-Werte: 0=unplugged, 1=in socket, 3=locked, 5=ready, 7=charging/locked
+   */
+  setPlugStatus(value: number): void {
+    if (value < 0 || value > 7) {
+      return; // Ungültiger Wert
+    }
+    
+    if (this.plug !== value) {
+      this.plug = value;
+      this.sendBroadcast({ "Plug": value });
+      
+      // State anpassen basierend auf Plug-Status
+      if (value === 0) {
+        // Kabel getrennt → nicht bereit
+        this.state = 1; // Not ready for charging
+        this.enabled = false;
+      } else if (value >= 3 && !this.enabled) {
+        // Kabel eingesteckt/verriegelt, aber nicht geladen → bereit
+        this.state = 2; // Ready for charging
+      }
+    }
+  }
+
+  /**
+   * Getter für E pres (Session-Energie) - für periodische Broadcasts
+   */
+  getEPres(): number {
+    // Energie aktualisieren vor dem Lesen
+    this.updateEnergyCounters();
+    return Math.round(this.sessionEnergy);
   }
 }
 

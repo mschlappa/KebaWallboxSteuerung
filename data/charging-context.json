@@ -1,11 +1,10 @@
 {
   "strategy": "off",
-  "isActive": true,
-  "currentAmpere": 16,
-  "targetAmpere": 16,
+  "isActive": false,
+  "currentAmpere": 0,
+  "targetAmpere": 0,
   "currentPhases": 1,
   "adjustmentCount": 0,
   "lastAdjustmentTimes": [],
-  "calculatedSurplus": 3604.5,
-  "lastAdjustment": "2025-11-14T07:50:02.173Z"
+  "calculatedSurplus": 4402.8
 }

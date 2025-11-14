@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,13 +18,77 @@ import {
 } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { settingsSchema, controlStateSchema } from "@shared/schema";
-import type { Settings, ControlState } from "@shared/schema";
+import { settingsSchema, controlStateSchema, wallboxStatusSchema } from "@shared/schema";
+import type { Settings, ControlState, WallboxStatus } from "@shared/schema";
+import { PlugZap } from "lucide-react";
+
+function DemoInputControl() {
+  const { toast } = useToast();
+
+  // Hole aktuellen Input-Status von Wallbox
+  const { data: wallboxStatus } = useQuery<WallboxStatus>({
+    queryKey: ["/api/wallbox/status"],
+    refetchInterval: 2000,
+  });
+
+  const currentInput = wallboxStatus?.input ?? 0;
+
+  // Mutation für Input-Toggle
+  const setInputMutation = useMutation({
+    mutationFn: (input: 0 | 1) =>
+      apiRequest("POST", "/api/wallbox/demo-input", { input }),
+    onSuccess: (_, input) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallbox/status"] });
+      toast({
+        title: "Input gesetzt",
+        description: `Potenzialfreier Kontakt auf ${input === 1 ? 'EIN' : 'AUS'} gesetzt`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Input konnte nicht gesetzt werden",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleToggle = (checked: boolean) => {
+    const newValue = checked ? 1 : 0;
+    setInputMutation.mutate(newValue);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <PlugZap className="w-4 h-4 text-muted-foreground" />
+            <Label htmlFor="demo-input-toggle" className="text-sm font-medium">
+              Potenzialfreier Kontakt (X1)
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Enable-Eingang der Mock-Wallbox: {currentInput === 1 ? 'Eingeschaltet' : 'Ausgeschaltet'}
+          </p>
+        </div>
+        <Switch
+          id="demo-input-toggle"
+          checked={currentInput === 1}
+          onCheckedChange={handleToggle}
+          disabled={setInputMutation.isPending}
+          data-testid="switch-demo-input"
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -66,9 +130,11 @@ export default function SettingsPage() {
         stopDelaySeconds: 300,
         minCurrentChangeAmpere: 1,
         minChangeIntervalSeconds: 60,
+        inputX1Strategy: "max_without_battery",
       },
       demoMode: false,
       mockWallboxPhases: 3,
+      mockWallboxPlugStatus: 7,
     },
   });
 
@@ -92,6 +158,7 @@ export default function SettingsPage() {
         stopDelaySeconds: 300,
         minCurrentChangeAmpere: 1,
         minChangeIntervalSeconds: 60,
+        inputX1Strategy: "max_without_battery" as const,
       };
       
       form.reset({
@@ -227,25 +294,65 @@ export default function SettingsPage() {
               {form.watch("demoMode") && (
                 <>
                   <Separator />
-                  <div className="space-y-2">
-                    <Label htmlFor="mock-wallbox-phases" className="text-sm font-medium">
-                      Mock-Wallbox Phasen
-                    </Label>
-                    <Select
-                      value={String(form.watch("mockWallboxPhases") ?? 3)}
-                      onValueChange={(value) => form.setValue("mockWallboxPhases", Number(value) as 1 | 3)}
-                    >
-                      <SelectTrigger id="mock-wallbox-phases" className="h-12" data-testid="select-mock-phases">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 Phase (einphasig)</SelectItem>
-                        <SelectItem value="3">3 Phasen (dreiphasig)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Simuliert den physischen Phasen-Umschalter der Wallbox
-                    </p>
+                  
+                  <div className="border rounded-lg p-4 space-y-3 bg-card">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-medium">
+                        Mock-Wallbox Parameter
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Simulierte Hardware-Zustände der Wallbox
+                      </p>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="mock-wallbox-phases" className="text-sm font-medium">
+                        Phasenanzahl
+                      </Label>
+                      <Select
+                        value={String(form.watch("mockWallboxPhases") ?? 3)}
+                        onValueChange={(value) => form.setValue("mockWallboxPhases", Number(value) as 1 | 3)}
+                      >
+                        <SelectTrigger id="mock-wallbox-phases" className="h-12" data-testid="select-mock-phases">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1 Phase (einphasig)</SelectItem>
+                          <SelectItem value="3">3 Phasen (dreiphasig)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Simuliert den physischen Phasen-Umschalter
+                      </p>
+                    </div>
+                    
+                    <DemoInputControl />
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="mock-plug-status" className="text-sm font-medium">
+                        Kabel-Status (Plug)
+                      </Label>
+                      <Select
+                        value={String(form.watch("mockWallboxPlugStatus") ?? 7)}
+                        onValueChange={(value) => form.setValue("mockWallboxPlugStatus", Number(value))}
+                      >
+                        <SelectTrigger id="mock-plug-status" className="h-12" data-testid="select-mock-plug">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">0 - Getrennt (unplugged)</SelectItem>
+                          <SelectItem value="1">1 - In Buchse (in socket)</SelectItem>
+                          <SelectItem value="3">3 - Verriegelt (locked)</SelectItem>
+                          <SelectItem value="5">5 - Bereit (ready)</SelectItem>
+                          <SelectItem value="7">7 - Laden / Verriegelt (charging)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Simuliert Kabelstatus für Broadcast-Test
+                      </p>
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
@@ -367,7 +474,24 @@ export default function SettingsPage() {
                   <>
                     <Separator />
 
-                    <div className="space-y-4 pt-2">
+                    <Accordion type="single" collapsible className="w-full">
+                      <AccordionItem value="e3dc-config" className="border-none">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">
+                            Konfiguration e3dcset
+                          </Label>
+                          <AccordionTrigger className="hover:no-underline p-0 h-auto" />
+                        </div>
+
+                        <AccordionContent>
+                          <div className="space-y-4 pt-2">
+                      <div className="p-3 rounded-md bg-muted">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Hinweis:</strong> Der Prefix wird automatisch vor jeden Parameter gesetzt. 
+                          Geben Sie in den folgenden Feldern nur die spezifischen Parameter ein (z.B. "-d 1").
+                        </p>
+                      </div>
+
                       <div className="space-y-2">
                         <Label htmlFor="e3dc-prefix" className="text-sm font-medium">
                           CLI-Tool & Konfiguration (Prefix)
@@ -382,13 +506,6 @@ export default function SettingsPage() {
                         />
                         <p className="text-xs text-muted-foreground">
                           Gemeinsamer Teil aller Befehle (Pfad zum Tool + Konfigurationsdatei)
-                        </p>
-                      </div>
-
-                      <div className="p-3 rounded-md bg-muted">
-                        <p className="text-xs text-muted-foreground">
-                          <strong>Hinweis:</strong> Der Prefix wird automatisch vor jeden Parameter gesetzt. 
-                          Geben Sie in den folgenden Feldern nur die spezifischen Parameter ein (z.B. "-d 1").
                         </p>
                       </div>
 
@@ -471,7 +588,10 @@ export default function SettingsPage() {
                           Stellen Sie sicher, dass die entsprechenden Befehle korrekt konfiguriert sind.
                         </p>
                       </div>
-                    </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </>
                 )}
               </div>
@@ -479,138 +599,167 @@ export default function SettingsPage() {
             <Separator />
 
             <div className="border rounded-lg p-4 space-y-3">
-              <div className="space-y-2">
-                <Label className="text-base font-medium">
-                  Ladestrategie-Parameter
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Die aktive Strategie kann auf der Statusseite gewählt werden
-                </p>
-              </div>
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="strategy-params" className="border-none">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base font-medium">
+                        Ladestrategie-Parameter
+                      </Label>
+                      <AccordionTrigger className="hover:no-underline p-0 h-auto" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Die aktive Strategie kann auf der Statusseite gewählt werden
+                    </p>
+                  </div>
 
-              <Separator />
-              
-              <div className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label htmlFor="min-start-power" className="text-sm font-medium">
-                    Mindest-Startleistung (W)
-                  </Label>
-                  <Input
-                    id="min-start-power"
-                    type="number"
-                    min="500"
-                    max="5000"
-                    step="100"
-                    {...form.register("chargingStrategy.minStartPowerWatt", { valueAsNumber: true })}
-                    className="h-12"
-                    data-testid="input-min-start-power"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Mindest-Überschuss zum Starten der Ladung (500-5000 W)
-                  </p>
-                </div>
+                  <Separator className="my-3" />
 
-                <div className="space-y-2">
-                  <Label htmlFor="stop-threshold" className="text-sm font-medium">
-                    Stopp-Schwellwert (W)
-                  </Label>
-                  <Input
-                    id="stop-threshold"
-                    type="number"
-                    min="300"
-                    max="3000"
-                    step="100"
-                    {...form.register("chargingStrategy.stopThresholdWatt", { valueAsNumber: true })}
-                    className="h-12"
-                    data-testid="input-stop-threshold"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Unterschreitet der Überschuss diesen Wert, wird die Ladung gestoppt (300-3000 W)
-                  </p>
-                </div>
+                  <AccordionContent>
+                    <div className="space-y-4 pt-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="min-start-power" className="text-sm font-medium">
+                          Mindest-Startleistung (W)
+                        </Label>
+                        <Input
+                          id="min-start-power"
+                          type="number"
+                          min="500"
+                          max="5000"
+                          step="100"
+                          {...form.register("chargingStrategy.minStartPowerWatt", { valueAsNumber: true })}
+                          className="h-12"
+                          data-testid="input-min-start-power"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Mindest-Überschuss zum Starten der Ladung (500-5000 W)
+                        </p>
+                      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="start-delay" className="text-sm font-medium">
-                    Start-Verzögerung (Sekunden)
-                  </Label>
-                  <Input
-                    id="start-delay"
-                    type="number"
-                    min="30"
-                    max="600"
-                    step="30"
-                    {...form.register("chargingStrategy.startDelaySeconds", { valueAsNumber: true })}
-                    className="h-12"
-                    data-testid="input-start-delay"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Wartezeit bevor Ladung startet (30-600 s)
-                  </p>
-                </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="stop-threshold" className="text-sm font-medium">
+                          Stopp-Schwellwert (W)
+                        </Label>
+                        <Input
+                          id="stop-threshold"
+                          type="number"
+                          min="300"
+                          max="3000"
+                          step="100"
+                          {...form.register("chargingStrategy.stopThresholdWatt", { valueAsNumber: true })}
+                          className="h-12"
+                          data-testid="input-stop-threshold"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Unterschreitet der Überschuss diesen Wert, wird die Ladung gestoppt (300-3000 W)
+                        </p>
+                      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="stop-delay" className="text-sm font-medium">
-                    Stopp-Verzögerung (Sekunden)
-                  </Label>
-                  <Input
-                    id="stop-delay"
-                    type="number"
-                    min="60"
-                    max="900"
-                    step="60"
-                    {...form.register("chargingStrategy.stopDelaySeconds", { valueAsNumber: true })}
-                    className="h-12"
-                    data-testid="input-stop-delay"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Wartezeit bevor Ladung stoppt (60-900 s)
-                  </p>
-                </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="start-delay" className="text-sm font-medium">
+                          Start-Verzögerung (Sekunden)
+                        </Label>
+                        <Input
+                          id="start-delay"
+                          type="number"
+                          min="30"
+                          max="600"
+                          step="30"
+                          {...form.register("chargingStrategy.startDelaySeconds", { valueAsNumber: true })}
+                          className="h-12"
+                          data-testid="input-start-delay"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Wartezeit bevor Ladung startet (30-600 s)
+                        </p>
+                      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="min-current-change" className="text-sm font-medium">
-                    Mindest-Stromänderung (A)
-                  </Label>
-                  <Input
-                    id="min-current-change"
-                    type="number"
-                    min="0.1"
-                    max="5"
-                    step="0.1"
-                    {...form.register("chargingStrategy.minCurrentChangeAmpere", { valueAsNumber: true })}
-                    className="h-12"
-                    data-testid="input-min-current-change"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Mindestdifferenz für Stromänderung (0.1-5 A)
-                  </p>
-                </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="stop-delay" className="text-sm font-medium">
+                          Stopp-Verzögerung (Sekunden)
+                        </Label>
+                        <Input
+                          id="stop-delay"
+                          type="number"
+                          min="60"
+                          max="900"
+                          step="60"
+                          {...form.register("chargingStrategy.stopDelaySeconds", { valueAsNumber: true })}
+                          className="h-12"
+                          data-testid="input-stop-delay"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Wartezeit bevor Ladung stoppt (60-900 s)
+                        </p>
+                      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="min-change-interval" className="text-sm font-medium">
-                    Mindest-Änderungsintervall (Sekunden)
-                  </Label>
-                  <Input
-                    id="min-change-interval"
-                    type="number"
-                    min="10"
-                    max="300"
-                    step="10"
-                    {...form.register("chargingStrategy.minChangeIntervalSeconds", { valueAsNumber: true })}
-                    className="h-12"
-                    data-testid="input-min-change-interval"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Mindestabstand zwischen Stromänderungen (10-300 s)
-                  </p>
-                </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="min-current-change" className="text-sm font-medium">
+                          Mindest-Stromänderung (A)
+                        </Label>
+                        <Input
+                          id="min-current-change"
+                          type="number"
+                          min="0.1"
+                          max="5"
+                          step="0.1"
+                          {...form.register("chargingStrategy.minCurrentChangeAmpere", { valueAsNumber: true })}
+                          className="h-12"
+                          data-testid="input-min-current-change"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Mindestdifferenz für Stromänderung (0.1-5 A)
+                        </p>
+                      </div>
 
-                <div className="p-3 rounded-md bg-muted">
-                  <p className="text-xs text-muted-foreground">
-                    <strong>Hinweis:</strong> Die Strategie steuert automatisch den Ladestrom basierend auf dem verfügbaren PV-Überschuss.
-                  </p>
-                </div>
-              </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="min-change-interval" className="text-sm font-medium">
+                          Mindest-Änderungsintervall (Sekunden)
+                        </Label>
+                        <Input
+                          id="min-change-interval"
+                          type="number"
+                          min="10"
+                          max="300"
+                          step="10"
+                          {...form.register("chargingStrategy.minChangeIntervalSeconds", { valueAsNumber: true })}
+                          className="h-12"
+                          data-testid="input-min-change-interval"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Mindestabstand zwischen Stromänderungen (10-300 s)
+                        </p>
+                      </div>
+                    </div>
+                  </AccordionContent>
+
+                  <Separator className="my-3" />
+
+                  <div className="space-y-2 pt-2">
+                    <Label htmlFor="input-x1-strategy" className="text-sm font-medium">
+                      Auswahl Ladestrategie Kontakt (X1)
+                    </Label>
+                    <Select
+                      value={form.watch("chargingStrategy.inputX1Strategy") ?? "max_without_battery"}
+                      onValueChange={(value) => form.setValue("chargingStrategy.inputX1Strategy", value as any)}
+                    >
+                      <SelectTrigger id="input-x1-strategy" className="h-12" data-testid="select-input-x1-strategy">
+                        <SelectValue placeholder="Strategie wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="off">Aus</SelectItem>
+                        <SelectItem value="surplus_battery_prio">PV-Überschuss (Batterie-Priorität)</SelectItem>
+                        <SelectItem value="surplus_vehicle_prio">PV-Überschuss (Fahrzeug-Priorität)</SelectItem>
+                        <SelectItem value="max_with_battery">Max Power (mit Batterie)</SelectItem>
+                        <SelectItem value="max_without_battery">Max Power (ohne Batterie)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Diese Strategie wird aktiviert, wenn der potenzialfreie Kontakt X1 der Wallbox geschlossen wird
+                    </p>
+                  </div>
+                </AccordionItem>
+              </Accordion>
             </div>
 
             <Button

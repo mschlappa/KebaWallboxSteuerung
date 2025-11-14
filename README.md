@@ -26,7 +26,10 @@ Mit dieser App behalten Sie die Kontrolle über Ihre Wallbox und Ihr Energiesyst
 - **Ladestrom:** Überwachen Sie den Stromfluss in Ampere über alle Phasen
 - **Phasen-Erkennung:** Automatische Erkennung, ob 1-phasig oder 3-phasig geladen wird
 - **Energie:** Verfolgen Sie die geladene Energie - wahlweise für die aktuelle Ladesitzung oder die Gesamtenergie
-- **Kabelstatus:** Erkennen Sie sofort, ob das Ladekabel angeschlossen ist
+- **Kabelstatus:** Echtzeit-Tracking via UDP-Broadcasts
+  - Automatische Erkennung von Kabelverbindungsänderungen
+  - Unterstützt alle KEBA-Status: Getrennt, In Buchse, Verriegelt, Bereit, Laden
+  - Persistierung mit Zeitstempel für lückenlose Nachverfolgung
 
 #### E3DC S10 Energie-Monitoring
 - **PV-Leistung:** Aktuelle Solarstrom-Produktion in Echtzeit
@@ -83,14 +86,23 @@ Feinjustierung aller Parameter für perfekte Anpassung:
 - **Maximale Leistung:** Lädt automatisch mit Maximalstrom im Zeitfenster
 - **Strategie-Kombination:** Kann mit allen anderen Strategien kombiniert werden
 
+#### Potenzialfreier Kontakt (X1) Steuerung
+- **Automatische Strategieauswahl:** Konfigurierbare Ladestrategie für geschlossenen X1-Kontakt
+- **Unterstützte Strategien:** Alle 4 Ladestrategien plus "Aus"
+- **Echtzeit-Reaktion:** Sofortige Strategieänderung via UDP-Broadcast
+- **Ideal für:** Externe SmartHome-Systeme, Zeitschaltuhren, Energiemanager
+
 #### E3DC-spezifische Funktionen
 - **Batteriesperrung:** Verhindert Batterie-Entladung zum Laden des Autos (via CLI-Tool)
 - **Netzladung:** Lädt Hausbatterie aus dem Netz während der Nachtladung (via CLI-Tool)
 
 ### ⚙️ Einfache Einrichtung
-- Wallbox-IP-Adresse konfigurieren
-- E3DC S10 IP-Adresse und Modbus TCP einrichten (für Ladestrategien)
-- E3DC CLI-Tool (e3dcset) für Batterie-/Netzsteuerung (optional)
+- **Wallbox-IP-Adresse** konfigurieren
+- **E3DC S10 Integration** (optional): IP-Adresse und Modbus TCP einrichten
+  - Übersichtliche Akkordions für erweiterte Parameter
+- **E3DC CLI-Tool** (e3dcset) für Batterie-/Netzsteuerung (optional)
+  - Konfiguration in separatem Akkordion mit Hinweis-Box
+- **Potenzialfreier Kontakt (X1)** Strategie festlegen (optional)
 - Alle Einstellungen werden automatisch gespeichert
 
 ### 📋 Protokollierung & Diagnose
@@ -360,6 +372,7 @@ Detaillierte Kommunikationsprotokolle mit der Wallbox zur Fehlersuche und Analys
 - Simuliert KEBA Wallbox und E3DC S10 System
 - Realistische Daten mit tageszeit-abhängiger PV-Produktion und saisonalen Variationen
 - Alle Ladestrategien sind voll nutzbar
+- **Erweiterte Demo-Steuerung:** In den Einstellungen können Sie den Kabel-Status (Plug) manuell ändern (Getrennt, In Buchse, Verriegelt, Bereit, Laden)
 - Keine echte Hardware erforderlich
 
 **Wie installiere ich die App lokal?**
@@ -380,10 +393,11 @@ Detaillierte Kommunikationsprotokolle mit der Wallbox zur Fehlersuche und Analys
 ### Backend
 - **Runtime:** Node.js mit Express.js, TypeScript
 - **Kommunikation:** 
-  - **KEBA Wallbox:** UDP-Protokoll (Port 7090)
+  - **KEBA Wallbox:** UDP-Protokoll (Port 7090) mit Broadcast-Listener
   - **E3DC S10:** Modbus TCP (Port 502) für Live-Daten
   - **E3DC Steuerung:** CLI-Tool (e3dcset) für Batterie-/Netzladung
 - **Datenhaltung:** File-based JSON Storage mit Atomicity
+- **Broadcast-Handler:** Echtzeit-Erkennung von Wallbox-Statusänderungen (Input X1, Plug, State, E pres)
 - **Logging:** Strukturiertes Logging mit Log-Levels
 
 ### Ladestrategien-Controller
@@ -399,6 +413,8 @@ Detaillierte Kommunikationsprotokolle mit der Wallbox zur Fehlersuche und Analys
 - **Auto-Start:** Startet automatisch bei DEMO_AUTOSTART=true
 - **State-Synchronisation:** Wallbox-Leistung beeinflusst E3DC Grid-Berechnung
 - **Realistische Haushaltslasten:** Morgen-/Mittag-/Abend-Peaks mit Basis-Verbrauch
+- **Plug-Status-Steuerung:** Manuelles Setzen aller KEBA-Kabelstatus via Settings-Dropdown (Getrennt, In Buchse, Verriegelt, Bereit, Laden)
+- **Broadcast-Simulation:** Automatische UDP-Broadcasts bei Statusänderungen
 
 ### Sicherheit & Zuverlässigkeit
 - **CLI Output Sanitization:** Sichere Ausführung von E3DC-Befehlen

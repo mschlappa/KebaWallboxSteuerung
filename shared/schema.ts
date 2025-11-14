@@ -3,6 +3,7 @@ import { z } from "zod";
 export const wallboxStatusSchema = z.object({
   state: z.number(),
   plug: z.number(),
+  input: z.number().optional(), // Potenzialfreier Kontakt (Enable-Eingang X1)
   enableSys: z.number(),
   maxCurr: z.number(),
   ePres: z.number(),
@@ -56,6 +57,7 @@ export const chargingStrategyConfigSchema = z.object({
   physicalPhaseSwitch: z.union([z.literal(1), z.literal(3)]).default(3),  // Physischer Schalter: 1P oder 3P
   minCurrentChangeAmpere: z.number().min(0.1).max(5),
   minChangeIntervalSeconds: z.number().min(10).max(300),
+  inputX1Strategy: chargingStrategySchema.default("max_without_battery"),  // Strategie bei Input X1 = 1
 });
 
 export type ChargingStrategyConfig = z.infer<typeof chargingStrategyConfigSchema>;
@@ -74,6 +76,7 @@ export const settingsSchema = z.object({
   chargingStrategy: chargingStrategyConfigSchema.optional(),
   demoMode: z.boolean().optional(),
   mockWallboxPhases: z.union([z.literal(1), z.literal(3)]).optional().default(3),
+  mockWallboxPlugStatus: z.number().min(0).max(7).optional().default(7), // 0-7 gemäß KEBA Spezifikation
   mockTimeEnabled: z.boolean().optional(), // Mock-Zeit aktiviert/deaktiviert
   mockDateTime: z.string().optional(), // Format "YYYY-MM-DDTHH:MM" für Demo-Modus Datum+Zeit-Simulation (Jahreszeit → PV-Leistung)
 });

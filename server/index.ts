@@ -3,6 +3,8 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log as viteLog } from "./vite";
 import { storage } from "./storage";
 import { startUnifiedMock, stopUnifiedMock } from "./unified-mock";
+import { startBroadcastListener, stopBroadcastListener } from "./wallbox-broadcast-listener";
+import { sendUdpCommand } from "./wallbox-transport";
 import { log } from "./logger";
 
 const app = express();
@@ -54,17 +56,36 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Import UDP-Channel
+  const { wallboxUdpChannel } = await import('./wallbox-udp-channel');
+  
   // Auto-Start Mock-Server wenn DEMO_AUTOSTART=true oder demoMode aktiviert ist
   const shouldStartMock = process.env.DEMO_AUTOSTART === 'true' || storage.getSettings()?.demoMode;
   
   if (shouldStartMock) {
     try {
+      // UDP-Channel wird automatisch vom Mock-Server gestartet
       await startUnifiedMock();
       log('info', 'system', '✅ Unified Mock Server automatisch gestartet (Demo-Modus)');
     } catch (error) {
       log('error', 'system', '⚠️ Fehler beim Starten des Mock-Servers', error instanceof Error ? error.message : String(error));
       log('warning', 'system', 'Fortsetzung ohne Mock-Server...');
     }
+  } else {
+    // Kein Mock-Modus: UDP-Channel für Production starten
+    try {
+      await wallboxUdpChannel.start();
+      log('info', 'system', '✅ UDP-Channel gestartet (Production-Modus)');
+    } catch (error) {
+      log('error', 'system', '⚠️ Fehler beim Starten des UDP-Channels', error instanceof Error ? error.message : String(error));
+    }
+  }
+  
+  // Broadcast-Listener starten (verwendet UDP-Channel + ChargingStrategyController)
+  try {
+    await startBroadcastListener(sendUdpCommand);
+  } catch (error) {
+    log('error', 'system', '⚠️ Fehler beim Starten des Broadcast-Listeners', error instanceof Error ? error.message : String(error));
   }
   
   const server = await registerRoutes(app);
@@ -99,13 +120,16 @@ app.use((req, res, next) => {
     viteLog(`serving on port ${port}`);
   });
   
-  // Graceful Shutdown für Mock-Server (falls aktiv)
+  // Graceful Shutdown für Mock-Server und Broadcast-Listener (falls aktiv)
   const shutdown = async () => {
     log('info', 'system', '🛑 Graceful Shutdown wird durchgeführt...');
     try {
-      await stopUnifiedMock();
+      await Promise.all([
+        stopUnifiedMock(),
+        stopBroadcastListener()
+      ]);
     } catch (error) {
-      log('error', 'system', 'Fehler beim Stoppen des Mock-Servers', error instanceof Error ? error.message : String(error));
+      log('error', 'system', 'Fehler beim Shutdown', error instanceof Error ? error.message : String(error));
     }
     process.exit(0);
   };
