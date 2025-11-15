@@ -128,8 +128,8 @@ export class WallboxMockService {
       "I3": i3,
       "P": Math.round(this.currentPower * 1000), // W → mW
       "PF": 990, // Power Factor 99.0%
-      "E pres": Math.round(this.sessionEnergy), // in Wh
-      "E total": Math.round(this.totalEnergy), // in Wh
+      "E pres": Math.round(this.sessionEnergy * 10), // Wh → dWh (0,1 Wh laut KEBA-Protokoll)
+      "E total": Math.round(this.totalEnergy * 10), // Wh → dWh (0,1 Wh laut KEBA-Protokoll)
       "Sec": 6789
     };
   }
