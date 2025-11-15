@@ -106,7 +106,7 @@ export const logEntrySchema = z.object({
   id: z.string(),
   timestamp: z.string(),
   level: logLevelSchema,
-  category: z.enum(["wallbox", "wallbox-mock", "e3dc", "e3dc-mock", "fhem", "fhem-mock", "webhook", "system"]),
+  category: z.enum(["wallbox", "wallbox-mock", "e3dc", "e3dc-mock", "fhem", "fhem-mock", "webhook", "system", "storage"]),
   message: z.string(),
   details: z.string().optional(),
 });

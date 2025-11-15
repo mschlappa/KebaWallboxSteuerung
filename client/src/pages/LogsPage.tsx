@@ -10,9 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Trash2, Filter, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-type LogCategory = "wallbox" | "wallbox-mock" | "e3dc" | "e3dc-mock" | "fhem" | "fhem-mock" | "webhook" | "system";
+type LogCategory = "wallbox" | "wallbox-mock" | "e3dc" | "e3dc-mock" | "fhem" | "fhem-mock" | "webhook" | "system" | "storage";
 
-const ALL_CATEGORIES: LogCategory[] = ["wallbox", "wallbox-mock", "e3dc", "e3dc-mock", "fhem", "fhem-mock", "webhook", "system"];
+const ALL_CATEGORIES: LogCategory[] = ["wallbox", "wallbox-mock", "e3dc", "e3dc-mock", "fhem", "fhem-mock", "webhook", "system", "storage"];
 
 export default function LogsPage() {
   const { toast } = useToast();
@@ -91,6 +91,7 @@ export default function LogsPage() {
       case "fhem-mock": return "FHEM Mock";
       case "webhook": return "Webhook";
       case "system": return "System";
+      case "storage": return "Storage";
     }
   };
 
@@ -125,6 +126,8 @@ export default function LogsPage() {
         return "bg-green-500 text-white dark:bg-green-600";
       case "system":
         return "bg-purple-500 text-white dark:bg-purple-600";
+      case "storage":
+        return "bg-gray-500 text-white dark:bg-gray-600";
       default:
         return "bg-muted text-muted-foreground";
     }
