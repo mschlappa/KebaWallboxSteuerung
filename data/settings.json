@@ -32,7 +32,7 @@
     "inputX1Strategy": "max_without_battery"
   },
   "demoMode": true,
-  "mockWallboxPhases": 1,
+  "mockWallboxPhases": 3,
   "mockWallboxPlugStatus": 7,
   "mockTimeEnabled": false,
   "mockDateTime": ""
