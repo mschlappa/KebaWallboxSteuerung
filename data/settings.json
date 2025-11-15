@@ -21,7 +21,7 @@
     "gridChargeDuringNightCharging": false
   },
   "chargingStrategy": {
-    "activeStrategy": "off",
+    "activeStrategy": "max_without_battery",
     "minStartPowerWatt": 500,
     "stopThresholdWatt": 1000,
     "startDelaySeconds": 30,
