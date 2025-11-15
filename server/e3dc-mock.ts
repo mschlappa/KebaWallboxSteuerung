@@ -196,7 +196,7 @@ export class E3dcMockService {
     const housePower = housePowerWithoutWallbox + wallboxPower;
     
     // DEBUG: Energiebilanz-Logging - ECHTER E3DC VERHALTENSWEISE
-    log('debug', 'system', '[E3DC-Mock] Energiebilanz (wie echter E3DC)', JSON.stringify({
+    log('debug', 'e3dc-mock', '[E3DC-Mock] Energiebilanz (wie echter E3DC)', JSON.stringify({
       housePowerWithoutWallbox: Math.round(housePowerWithoutWallbox),
       wallboxPower: Math.round(wallboxPower),
       totalConsumption: Math.round(totalConsumption),

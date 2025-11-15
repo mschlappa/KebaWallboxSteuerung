@@ -70,7 +70,7 @@ fhemDeviceStates.set('autoWallboxPV', false); // Standard: PV-Überschuss aus
 
 const fhemServer = http.createServer((req, res) => {
   const url = new URL(req.url || '', `http://${req.headers.host}`);
-  log("debug", "system", `[FHEM-HTTP] ${req.method} ${url.pathname}${url.search}`);
+  log("debug", "fhem-mock", `[FHEM-HTTP] ${req.method} ${url.pathname}${url.search}`);
 
   // CORS Headers für lokale Entwicklung
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -97,7 +97,7 @@ const fhemServer = http.createServer((req, res) => {
     const deviceState = fhemDeviceStates.get(deviceName) ?? false;
     const stateStr = deviceState ? 'on' : 'off';
     
-    log("debug", "system", `[FHEM-HTTP] Status-Abfrage: ${deviceName} = ${stateStr}`);
+    log("debug", "fhem-mock", `[FHEM-HTTP] Status-Abfrage: ${deviceName} = ${stateStr}`);
     
     // Generiere FHEM-typische HTML-Response
     const html = `
@@ -140,7 +140,7 @@ const fhemServer = http.createServer((req, res) => {
 
   if (deviceName && newState !== null) {
     fhemDeviceStates.set(deviceName, newState);
-    log("debug", "system", `[FHEM-HTTP] Befehl ausgeführt: ${deviceName} = ${newState ? 'on' : 'off'}`);
+    log("debug", "fhem-mock", `[FHEM-HTTP] Befehl ausgeführt: ${deviceName} = ${newState ? 'on' : 'off'}`);
     
     // FHEM-typische Response
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -154,12 +154,12 @@ const fhemServer = http.createServer((req, res) => {
 });
 
 fhemServer.on('listening', () => {
-  log("info", "system", `✅ [FHEM-HTTP] FHEM Mock läuft auf ${HOST}:${FHEM_HTTP_PORT}`);
-  log("info", "system", `   Unterstützt FHEM-typische URLs für Status & Befehle`);
+  log("info", "fhem-mock", `✅ [FHEM-HTTP] FHEM Mock läuft auf ${HOST}:${FHEM_HTTP_PORT}`);
+  log("info", "fhem-mock", `   Unterstützt FHEM-typische URLs für Status & Befehle`);
 });
 
 fhemServer.on('error', (err) => {
-  log("error", "system", `[FHEM-HTTP] Server Error:`, err instanceof Error ? err.message : String(err));
+  log("error", "fhem-mock", `[FHEM-HTTP] Server Error:`, err instanceof Error ? err.message : String(err));
 });
 
 // =============================================================================
@@ -170,7 +170,7 @@ import { wallboxUdpChannel } from './wallbox-udp-channel';
 
 // Command-Handler für KEBA-Befehle
 const handleWallboxCommand = (message: string, rinfo: any) => {
-  log("debug", "system", `[Wallbox-UDP] Received command: "${message}" from ${rinfo.address}:${rinfo.port}`);
+  log("debug", "wallbox-mock", `[Wallbox-UDP] Received command: "${message}" from ${rinfo.address}:${rinfo.port}`);
   
   let response: any;
   
@@ -190,7 +190,7 @@ const handleWallboxCommand = (message: string, rinfo: any) => {
     const pvMode = message.split(' ')[2];
     if (pvMode === '1' || pvMode === '0') {
       wallboxMockService.setPvSurplusMode(pvMode === '1');
-      log("debug", "system", `[Wallbox-UDP] PV-Surplus-Modus ${pvMode === '1' ? 'aktiviert (1-Phase, 6-32A)' : 'deaktiviert (3-Phase, 6-16A)'}`);
+      log("debug", "wallbox-mock", `[Wallbox-UDP] PV-Surplus-Modus ${pvMode === '1' ? 'aktiviert (1-Phase, 6-32A)' : 'deaktiviert (3-Phase, 6-16A)'}`);
       response = { "TCH-OK": "done" };
     } else {
       response = { "TCH-ERR": "invalid mode value" };
@@ -203,14 +203,14 @@ const handleWallboxCommand = (message: string, rinfo: any) => {
   if (response) {
     const responseStr = JSON.stringify(response);
     wallboxUdpChannel.sendCommandResponse(response, rinfo.address, rinfo.port);
-    log("debug", "system", `[Wallbox-UDP] Sent: ${responseStr.substring(0, 100)}${responseStr.length > 100 ? '...' : ''}`);
+    log("debug", "wallbox-mock", `[Wallbox-UDP] Sent: ${responseStr.substring(0, 100)}${responseStr.length > 100 ? '...' : ''}`);
   }
 };
 
 // Broadcast-Handler für eigene Mock-Broadcasts (wird ignoriert vom Listener)
 const handleWallboxBroadcast = (data: any, rinfo: any) => {
   // Mock-Server ignoriert eigene Broadcasts
-  log("debug", "system", `[Wallbox-UDP] Ignoriere eigenen Broadcast: "${JSON.stringify(data).substring(0, 50)}..."`);
+  log("debug", "wallbox-mock", `[Wallbox-UDP] Ignoriere eigenen Broadcast: "${JSON.stringify(data).substring(0, 50)}..."`);
 };
 
 // =============================================================================
@@ -348,18 +348,18 @@ const modbusVector = {
           
           callback(null, registerValue);
         } catch (err) {
-          log("error", "system", `[E3DC-Modbus] Error getting register ${addr}:`, err instanceof Error ? err.message : String(err));
+          log("error", "e3dc-mock", `[E3DC-Modbus] Error getting register ${addr}:`, err instanceof Error ? err.message : String(err));
           callback(err instanceof Error ? err : new Error(String(err)), 0);
         }
       })
       .catch(err => {
-        log("error", "system", `[E3DC-Modbus] Cache update error for register ${addr}:`, err instanceof Error ? err.message : String(err));
+        log("error", "e3dc-mock", `[E3DC-Modbus] Cache update error for register ${addr}:`, err instanceof Error ? err.message : String(err));
         callback(err instanceof Error ? err : new Error(String(err)), 0);
       });
   },
   
   setRegister: (addr: number, value: number, unitID: number) => {
-    log("debug", "system", `[E3DC-Modbus] Write not supported: Register ${addr} = ${value}`);
+    log("debug", "e3dc-mock", `[E3DC-Modbus] Write not supported: Register ${addr} = ${value}`);
     return;
   }
 };
@@ -391,7 +391,7 @@ export async function startUnifiedMock(): Promise<void> {
   
   // Broadcast-Callback setzen (sendet Broadcasts über UDP-Channel)
   wallboxMockService.setBroadcastCallback((data) => {
-    log("debug", "system", `[Mock-Wallbox → Broadcast] Sende: ${JSON.stringify(data)}`);
+    log("debug", "wallbox-mock", `[Mock-Wallbox → Broadcast] Sende: ${JSON.stringify(data)}`);
     wallboxUdpChannel.sendBroadcast(data);
   });
   
@@ -399,13 +399,13 @@ export async function startUnifiedMock(): Promise<void> {
   const settings = await loadSettings();
   const mockPhases = (settings?.mockWallboxPhases ?? 3) as 1 | 3;
   wallboxMockService.setPhases(mockPhases);
-  log("debug", "system", `[Wallbox-Mock] Phasen-Konfiguration gesetzt: ${mockPhases}P`);
+  log("debug", "wallbox-mock", `[Wallbox-Mock] Phasen-Konfiguration gesetzt: ${mockPhases}P`);
 
   // UDP Channel starten und Handler registrieren
   await wallboxUdpChannel.start();
   wallboxUdpChannel.onCommand(handleWallboxCommand);
   wallboxUdpChannel.onBroadcast(handleWallboxBroadcast);
-  log("info", "system", "✅ [Wallbox-UDP] KEBA Mock läuft auf 0.0.0.0:7090");
+  log("info", "wallbox-mock", "✅ [Wallbox-UDP] KEBA Mock läuft auf 0.0.0.0:7090");
 
   // HTTP Server starten
   await new Promise<void>((resolve, reject) => {
@@ -427,12 +427,12 @@ export async function startUnifiedMock(): Promise<void> {
 
   // Modbus Server Event-Handler
   modbusServer.on('socketError', (err: Error) => {
-    log('error', 'system', '[E3DC-Modbus] Socket Error', err.message);
+    log('error', 'e3dc-mock', '[E3DC-Modbus] Socket Error', err.message);
   });
 
   modbusServer.on('initialized', () => {
-    log("info", "system", `✅ [E3DC-Modbus] E3DC S10 Mock läuft auf ${HOST}:${E3DC_MODBUS_PORT}`);
-    log("info", "system", `   Register 40067-40083 (Holding Registers) verfügbar`);
+    log("info", "e3dc-mock", `✅ [E3DC-Modbus] E3DC S10 Mock läuft auf ${HOST}:${E3DC_MODBUS_PORT}`);
+    log("info", "e3dc-mock", `   Register 40067-40083 (Holding Registers) verfügbar`);
   });
 
   log("info", "system", "\n📋 Demo-Modus Konfiguration:");
@@ -463,7 +463,7 @@ export async function startUnifiedMock(): Promise<void> {
       const ePres = wallboxMockService.getEPres();
       const broadcastData = { "E pres": ePres };
       
-      log("debug", "system", `[Mock-Wallbox → Broadcast] E pres (während Ladung): ${JSON.stringify(broadcastData)}`);
+      log("debug", "wallbox-mock", `[Mock-Wallbox → Broadcast] E pres (während Ladung): ${JSON.stringify(broadcastData)}`);
       
       // Broadcast über UDP-Channel senden
       wallboxUdpChannel.sendBroadcast(broadcastData);
@@ -503,7 +503,7 @@ export async function stopUnifiedMock(): Promise<void> {
     wallboxUdpChannel.stop(),
     new Promise<void>((resolve) => {
       fhemServer.close(() => {
-        log("info", "system", "   ✅ FHEM HTTP Server gestoppt");
+        log("info", "fhem-mock", "   ✅ FHEM HTTP Server gestoppt");
         resolve();
       });
     })
@@ -514,7 +514,7 @@ export async function stopUnifiedMock(): Promise<void> {
     promises.push(
       new Promise<void>((resolve) => {
         modbusServer.close(() => {
-          log("info", "system", "   ✅ E3DC Modbus Server gestoppt");
+          log("info", "e3dc-mock", "   ✅ E3DC Modbus Server gestoppt");
           modbusServer = null;
           resolve();
         });
