@@ -68,8 +68,20 @@ export default function LogsPage() {
     },
   });
 
+  const logLevelPriority: Record<LogLevel, number> = {
+    debug: 0,
+    info: 1,
+    warning: 2,
+    error: 3,
+  };
+
   const filteredLogs = logs
-    .filter((log) => filterLevel === "all" || log.level === filterLevel)
+    .filter((log) => {
+      if (filterLevel === "all") return true;
+      const logPriority = logLevelPriority[log.level];
+      const filterPriority = logLevelPriority[filterLevel];
+      return logPriority >= filterPriority;
+    })
     .filter((log) => selectedCategories.length === 0 || selectedCategories.includes(log.category as LogCategory))
     .reverse();
 
@@ -224,10 +236,10 @@ export default function LogsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Alle</SelectItem>
-                    <SelectItem value="debug">Debug</SelectItem>
-                    <SelectItem value="info">Info</SelectItem>
-                    <SelectItem value="warning">Warning</SelectItem>
-                    <SelectItem value="error">Error</SelectItem>
+                    <SelectItem value="debug">Debug (und höher)</SelectItem>
+                    <SelectItem value="info">Info (und höher)</SelectItem>
+                    <SelectItem value="warning">Warning (und höher)</SelectItem>
+                    <SelectItem value="error">Nur Error</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
