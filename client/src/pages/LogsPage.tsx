@@ -86,6 +86,16 @@ export default function LogsPage() {
     switch (category) {
       case "wallbox":
         return "bg-blue-500 text-white dark:bg-blue-600";
+      case "wallbox-mock":
+        return "bg-blue-400 text-white dark:bg-blue-500";
+      case "e3dc":
+        return "bg-orange-500 text-white dark:bg-orange-600";
+      case "e3dc-mock":
+        return "bg-orange-400 text-white dark:bg-orange-500";
+      case "fhem":
+        return "bg-teal-500 text-white dark:bg-teal-600";
+      case "fhem-mock":
+        return "bg-teal-400 text-white dark:bg-teal-500";
       case "webhook":
         return "bg-green-500 text-white dark:bg-green-600";
       case "system":
@@ -207,6 +217,11 @@ export default function LogsPage() {
                     <SelectContent>
                       <SelectItem value="all">Alle</SelectItem>
                       <SelectItem value="wallbox">Wallbox</SelectItem>
+                      <SelectItem value="wallbox-mock">Wallbox Mock</SelectItem>
+                      <SelectItem value="e3dc">E3DC</SelectItem>
+                      <SelectItem value="e3dc-mock">E3DC Mock</SelectItem>
+                      <SelectItem value="fhem">FHEM</SelectItem>
+                      <SelectItem value="fhem-mock">FHEM Mock</SelectItem>
                       <SelectItem value="webhook">Webhook</SelectItem>
                       <SelectItem value="system">System</SelectItem>
                     </SelectContent>
